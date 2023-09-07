@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-import pychatgpt
+from pychatgpt import Chat, Options
+from getpass import getpass
 import srt
 import sys
 
@@ -34,20 +35,32 @@ def manual_process(subtitles_list):
     finalOutputFile = open(OSRT_UNIX, "w")
     finalOutputFile.write(srt.compose(subtitlesList))
 
+def set_options():
+    options = Options()
+    options.chat_log = "../output/chatGPT_output.txt"
+    return (options)
+
 # Uses the pychatgpt library to automatically query chatgpt for subtitle correction.
 def auto_processing():
+    user_options = set_options()
+    print("Hello!")
     email_address = input("Enter email used for chatGPT account: ")
-    user_password = input("Enter password used for chatGPT account: ")
-    chat = Chat(email=email_address, password=user_password)
+    user_password = getpass("Enter password used for chatGPT account: ")
+    chat = Chat(email=email_address, password=user_password, options=user_options)
+    answer = chat.ask("Hello, this is a test. Please respond with an OK. Thanks!")
+    print(answer)
 
 
 def main():
-    if (len(sys.argv) < 3):
-        print("Please enter the path to a valid SRT file.")
-    subtitles_list = srt_to_text(sys.argv[1])
-    if (sys.argv[2] == 'a'):
-        auto_processing()
-    else if (sys.argv[2] == 'm'):
-        manual_process(subtitles_list)
-    else:
-        print("Please enter either a or m to indicate whether you will use the automatic or manual process")
+    auto_processing()
+    # if (len(sys.argv) < 3):
+    #     print("Please enter the path to a valid SRT file.")
+    # subtitles_list = srt_to_text(sys.argv[1])
+    # if (sys.argv[2] == 'a'):
+    #     auto_processing()
+    # elif (sys.argv[2] == 'm'):
+    #     manual_process(subtitles_list)
+    # else:
+    #     print("Please enter either a or m to indicate whether you will use the automatic or manual process")
+
+main()
