@@ -36,7 +36,9 @@ def manual_process(subtitles_list):
 
 # Uses the pychatgpt library to automatically query chatgpt for subtitle correction.
 def auto_processing():
-
+    email_address = input("Enter email used for chatGPT account: ")
+    user_password = input("Enter password used for chatGPT account: ")
+    chat = Chat(email=email_address, password=user_password)
 
 
 def main():
