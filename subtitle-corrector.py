@@ -29,13 +29,19 @@ import argparse
 import openai
 import srt
 import sys
-from sys import platform # OS checking
 import os
+import platform
+import tiktoken
 
-ORAW_TEXT_NT = 'output/raw_SRT_text.txt'
-OSRT_NT = 'output/output.srt'
-ORAW_TEXT_UNIX = "./output/raw_SRT_text.txt"
-OSRT_UNIX = "./output/output.srt"
+ORAW_TEXT = ""
+OFILE = ""
+if (platform.system() == "Linux" or platform.system() == "Darwin"):
+    ORAW_TEXT = "./output/raw_SRT_text.txt"
+    OFILE = "./output/output.srt"
+elif (platform.system() == 'Windows'):
+    ORAW_TEXT = 'output/raw_SRT_text.txt'
+    OFILE = 'output/output.srt'
+
 subtitle_correction_prompt = '''You are going to help correct the subtitles for a talk given at a
 programming school. You will be provided with an input, each newline is a new subtitle.
 Your job is to remove redundant words, fix grammar, and make sure that sentences make sense in the context.
@@ -47,7 +53,7 @@ def srt_to_text(file_name):
     print("Formatting: " + file_name)
     srt_file = open(file_name, encoding="utf-8")
     subtitles_list = list(srt.parse(srt_file.read()))
-    ofile_raw_text = open(ORAW_TEXT_NT, "w", encoding="utf-8")
+    ofile_raw_text = open(ORAW_TEXT, "w", encoding="utf-8")
     for sub in subtitles_list:
         ofile_raw_text.write(sub.content + "\n")
     print("Formatted: " + file_name)
@@ -67,12 +73,12 @@ def manual_process(subtitles_list):
         else:
             sub.content = newContentLines[i]
             i += 1
-    finalOutputFile = open(OSRT_NT, "w", encoding="utf-8")
+    finalOutputFile = open(OFILE, "w", encoding="utf-8")
     finalOutputFile.write(srt.compose(subtitlesList))
 
 def output_SRT(answer, subtitles_list):
-    print("Outputting SRT")
-    outputfile = open(OSRT_NT, "w", encoding="utf-8")
+    print("Response received. Processing response into SRT and outputting")
+    outputfile = open(OFILE, "w", encoding="utf-8")
     new_content_lines = answer.splitlines()
     i = 0
     for sub in subtitles_list:
@@ -86,26 +92,38 @@ def output_SRT(answer, subtitles_list):
 
 # Queries ChatGPT with the stripped SRT data.
 def query_chatgpt(question):
-    print("Querying chatGPT")
+    print("Querying ChatGPT")
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     client = openai.ChatCompletion()
     chat_log = [{
         'role': 'system',
-        'content': "Translate every line of the next input to Dutch",
+        'content': subtitle_correction_prompt,
     }]
     chat_log.append({'role': 'user', 'content': question})
     response = client.create(model='gpt-3.5-turbo-16k', messages=chat_log)
     answer = response.choices[0]['message']['content']
     chat_log.append({'role': 'assistant', 'content': answer})
-    print("Processing response into SRT")
     return answer, chat_log
+
+def num_tokens_from_string(raw_text):
+    print("Calculating number of tokens")
+    encoding = tiktoken.get_encoding("gpt2")
+    num_tokens = len(encoding.encode(raw_text))
+    return num_tokens
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def auto_process(subtitles_list):
-    query = open(ORAW_TEXT_NT, "r", encoding="utf-8")
+    query = open(ORAW_TEXT, "r", encoding="utf-8")
     raw_text = query.read()
-    answer, log = query_chatgpt(raw_text);
-    output_SRT(answer, subtitles_list)
+    token_num = num_tokens_from_string(raw_text)
+    print("Number of tokens:", token_num)
+    query_count = 0
+    while (token_num > 1250):
+        token_num /= 2
+        query_count += 1
+    print(query_count)
+    # answer, log = query_chatgpt(raw_text);
+    # output_SRT(answer, subtitles_list)
 
 # Creates the argument parser.
 # These python libraries are actually pretty cool.
