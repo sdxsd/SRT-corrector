@@ -10,7 +10,7 @@ with the name "OPENAI_API_KEY" and with its value being the key itself. Click OK
 #### macOS/GNU + Linux
 Open your terminal and run the following commands:
 ```
-echo 'export OPENAI_API_KEY="[insert your key here between the brackets]"' > ~/.zshrc (.bashrc if on GNU + Linux)
+echo 'export OPENAI_API_KEY="[insert your key here between the brackets]"' >> ~/.zshrc (.bashrc if on GNU + Linux)
 ```
 ### Using the program:
 You can invoke the program from the terminal as so:
