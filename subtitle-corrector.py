@@ -32,8 +32,8 @@ import sys
 from sys import platform # OS checking
 import os
 
-ORAW_TEXT_NT = "output\raw_SRT_text.txt"
-OSRT_NT = "output\output.srt"
+ORAW_TEXT_NT = ".\output\raw_SRT_text.txt"
+OSRT_NT = ".\output\output.srt"
 ORAW_TEXT_UNIX = "./output/raw_SRT_text.txt"
 OSRT_UNIX = "./output/output.srt"
 subtitle_correction_prompt = '''You are going to help correct the subtitles for a talk given at a
