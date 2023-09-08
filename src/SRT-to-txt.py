@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 
-from pychatgpt import Chat, Options
-from getpass import getpass
+import openai
 import srt
 import sys
+import os
 
 ORAW_TEXT_UNIX = "../output/raw_SRT_text.txt"
 OSRT_UNIX = "../output/output.srt"
+subtitle_correction_prompt = '''You are going to help correct the subtitles for a talk given at a
+programming school. You will be provided with an input, each newline is a new subtitle.
+Your job is to remove redundant words, fix grammar, and make sure that sentences make sense in the context.
+You are going to output the modified subtitles in the same format as it was given.
+You MUST preserve the newlines.'''
 
 # Parses the SRT file into raw text data delimited by newlines.
 def srt_to_text(file_name):
@@ -16,7 +21,7 @@ def srt_to_text(file_name):
     ofile_raw_text = open(ORAW_TEXT_UNIX, "w")
     for sub in subtitles_list:
         ofile_raw_text.write(sub.content + "\n")
-    print("Formatted: " + filename)
+    print("Formatted: " + file_name)
     return (subtitles_list)
 
 # Requires the user to manually access chatgpt and get the required output. Program will
@@ -35,32 +40,30 @@ def manual_process(subtitles_list):
     finalOutputFile = open(OSRT_UNIX, "w")
     finalOutputFile.write(srt.compose(subtitlesList))
 
-def set_options():
-    options = Options()
-    options.chat_log = "../output/chatGPT_output.txt"
-    return (options)
-
-# Uses the pychatgpt library to automatically query chatgpt for subtitle correction.
-def auto_processing():
-    user_options = set_options()
-    print("Hello!")
-    email_address = input("Enter email used for chatGPT account: ")
-    user_password = getpass("Enter password used for chatGPT account: ")
-    chat = Chat(email=email_address, password=user_password, options=user_options)
-    answer = chat.ask("Hello, this is a test. Please respond with an OK. Thanks!")
-    print(answer)
+def query_chatgpt(question):
+    openai.api_key = os.environ.get('OPENAI_KEY')
+    client = openai.ChatCompletion()
+    chat_log = [{
+        'role': 'system',
+        'content': "You are normal chatGPT",
+    }]
+    chat_log.append({'role': 'user', 'content': question})
+    response = client.create(model='gpt-3.5-turbo', messages=chat_log)
+    answer = response.choices[0]['message']['content']
+    chat_log.append({'role': 'assistant', 'content': answer})
+    return answer, chat_log
 
 
 def main():
-    auto_processing()
-    # if (len(sys.argv) < 3):
-    #     print("Please enter the path to a valid SRT file.")
-    # subtitles_list = srt_to_text(sys.argv[1])
-    # if (sys.argv[2] == 'a'):
-    #     auto_processing()
-    # elif (sys.argv[2] == 'm'):
-    #     manual_process(subtitles_list)
-    # else:
-    #     print("Please enter either a or m to indicate whether you will use the automatic or manual process")
+    if (len(sys.argv) < 3):
+        print("Please enter the path to a valid SRT file & the mode you want to use.")
+    subtitles_list = srt_to_text(sys.argv[1])
+    if (sys.argv[2] == 'a'):
+        answer, log = query_chatgpt("This is a test, please respond with ok.")
+        print
+    elif (sys.argv[2] == 'm'):
+        manual_process(subtitles_list)
+    else:
+        print("Please enter either a or m to indicate whether you will use the automatic or manual process")
 
 main()
