@@ -42,7 +42,7 @@ You MUST preserve the newlines.'''
 # Parses the SRT file into raw text data delimited by newlines.
 def srt_to_text(file_name):
     print("Formatting: " + file_name)
-    srt_file = open(sys.argv[1])
+    srt_file = open(file_name)
     subtitles_list = list(srt.parse(srt_file.read()))
     ofile_raw_text = open(ORAW_TEXT_UNIX, "w")
     for sub in subtitles_list:
