@@ -29,8 +29,11 @@ import argparse
 import openai
 import srt
 import sys
+from sys import platform # OS checking
 import os
 
+ORAW_TEXT_NT = ".\output\raw_SRT_text.txt"
+OSRT_NT = ".\output\output.srt"
 ORAW_TEXT_UNIX = "./output/raw_SRT_text.txt"
 OSRT_UNIX = "./output/output.srt"
 subtitle_correction_prompt = '''You are going to help correct the subtitles for a talk given at a
@@ -44,7 +47,7 @@ def srt_to_text(file_name):
     print("Formatting: " + file_name)
     srt_file = open(file_name, encoding="utf-8")
     subtitles_list = list(srt.parse(srt_file.read()))
-    ofile_raw_text = open(ORAW_TEXT_UNIX, "w", encoding="utf-8")
+    ofile_raw_text = open(ORAW_TEXT_NT, "w", encoding="utf-8")
     for sub in subtitles_list:
         ofile_raw_text.write(sub.content + "\n")
     print("Formatted: " + file_name)
@@ -64,11 +67,11 @@ def manual_process(subtitles_list):
         else:
             sub.content = newContentLines[i]
             i += 1
-    finalOutputFile = open(OSRT_UNIX, "w", encoding="utf-8")
+    finalOutputFile = open(OSRT_NT, "w", encoding="utf-8")
     finalOutputFile.write(srt.compose(subtitlesList))
 
 def output_SRT(answer, subtitles_list):
-    outputfile = open(OSRT_UNIX, "w", encoding="utf-8")
+    outputfile = open(OSRT_NT, "w", encoding="utf-8")
     new_content_lines = answer.splitlines()
     i = 0
     for sub in subtitles_list:
@@ -97,7 +100,7 @@ def query_chatgpt(question):
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def auto_process(subtitles_list):
-    query = open(ORAW_TEXT_UNIX, "r", encoding="utf-8")
+    query = open(ORAW_TEXT_NT, "r", encoding="utf-8")
     raw_text = query.read()
     answer, log = query_chatgpt(raw_text);
     output_SRT(answer, subtitles_list)
