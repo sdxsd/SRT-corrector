@@ -5,8 +5,8 @@ import srt
 import sys
 import os
 
-ORAW_TEXT_UNIX = "../output/raw_SRT_text.txt"
-OSRT_UNIX = "../output/output.srt"
+ORAW_TEXT_UNIX = "./output/raw_SRT_text.txt"
+OSRT_UNIX = "./output/output.srt"
 subtitle_correction_prompt = '''You are going to help correct the subtitles for a talk given at a
 programming school. You will be provided with an input, each newline is a new subtitle.
 Your job is to remove redundant words, fix grammar, and make sure that sentences make sense in the context.
@@ -28,7 +28,7 @@ def srt_to_text(file_name):
 # be paused until user confirms that the replacement subtitles are available.
 def manual_process(subtitles_list):
     input("Press enter when processed data is placed into output/newContent.txt...")
-    newContentFile = open("../input/newContent.txt", "r")
+    newContentFile = open("./input/newContent.txt", "r")
     newContentLines = newContentFile.readlines()
     i = 0
     for sub in subtitlesList:
