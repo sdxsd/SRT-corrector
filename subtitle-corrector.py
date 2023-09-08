@@ -67,25 +67,40 @@ def manual_process(subtitles_list):
     finalOutputFile = open(OSRT_UNIX, "w")
     finalOutputFile.write(srt.compose(subtitlesList))
 
+def output_SRT(answer, subtitles_list):
+    outputfile = open(OSRT_UNIX, "w")
+    new_content_lines = answer.splitlines()
+    i = 0
+    for sub in subtitles_list:
+        if (i > len(new_content_lines) - 1):
+            sub.content = sub.content
+        else:
+            sub.content = new_content_lines[i]
+            i += 1
+    outputfile.write(srt.compose(subtitles_list))
+
 # Queries ChatGPT with the stripped SRT data.
 def query_chatgpt(question):
-    openai.api_key = os.environ.get('OPENAI_KEY')
+    print("Querying chatGPT")
+    openai.api_key = os.environ.get('OPENAI_API_KEY')
     client = openai.ChatCompletion()
     chat_log = [{
         'role': 'system',
-        'content': "You are normal chatGPT",
+        'content': "Translate every line of the next input to Dutch",
     }]
     chat_log.append({'role': 'user', 'content': question})
     response = client.create(model='gpt-3.5-turbo', messages=chat_log)
     answer = response.choices[0]['message']['content']
     chat_log.append({'role': 'assistant', 'content': answer})
+    print("Processing response into SRT")
     return answer, chat_log
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
-def auto_process():
+def auto_process(subtitles_list):
     query = open(ORAW_TEXT_UNIX, "r")
     raw_text = query.read()
     answer, log = query_chatgpt(raw_text);
+    output_SRT(answer, subtitles_list)
 
 # Creates the argument parser.
 # These python libraries are actually pretty cool.
@@ -94,7 +109,7 @@ def arg_parser_init():
         prog="subtitle-corrector",
         description="Corrects subtitles by using ChatGPT",
         epilog="subtitle-corrector")
-    parser.add_argument('filename', required=True)
+    parser.add_argument('filename')
     parser.add_argument('-m', '--manual', dest="manual_mode", required=False, default=False)
     return (parser)
 
@@ -106,5 +121,6 @@ def main():
     if (args.manual_mode == True):
         manual_process(subtitles_list)
     else:
-        auto_process()
+        auto_process(subtitles_list)
+
 main()
