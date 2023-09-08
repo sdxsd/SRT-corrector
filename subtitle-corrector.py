@@ -42,6 +42,7 @@ def manual_process(subtitles_list):
     finalOutputFile = open(OSRT_UNIX, "w")
     finalOutputFile.write(srt.compose(subtitlesList))
 
+# Queries ChatGPT with the stripped SRT data.
 def query_chatgpt(question):
     openai.api_key = os.environ.get('OPENAI_KEY')
     client = openai.ChatCompletion()
@@ -55,11 +56,14 @@ def query_chatgpt(question):
     chat_log.append({'role': 'assistant', 'content': answer})
     return answer, chat_log
 
+# Reads the raw SRT data and passes it to ChatGPT to be processed.
 def auto_process():
     query = open(ORAW_TEXT_UNIX, "r")
     raw_text = query.read()
     answer, log = query_chatgpt(raw_text);
 
+# Creates the argument parser.
+# These python libraries are actually pretty cool.
 def arg_parser_init():
     parser = argparse.ArgumentParser(
         prog="subtitle-corrector",
@@ -69,6 +73,7 @@ def arg_parser_init():
     parser.add_argument('-m', '--manual', dest="manual_mode", required=False, default=False)
     return (parser)
 
+# Main.
 def main():
     parser = arg_parser_init()
     args = parser.parse_args()
