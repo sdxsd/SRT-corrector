@@ -59,23 +59,6 @@ def srt_to_text(file_name):
     print("Formatted: " + file_name)
     return (subtitles_list)
 
-# Requires the user to manually access chatgpt and get the required output. Program will
-# be paused until user confirms that the replacement subtitles are available.
-# [deprecated]
-def manual_process(subtitles_list):
-    input("Press enter when processed data is placed into output/newContent.txt...")
-    newContentFile = open("./input/newContent.txt", "r", encoding="utf-8")
-    newContentLines = newContentFile.readlines()
-    i = 0
-    for sub in subtitlesList:
-        if (i > len(newContentLines) - 1):
-            sub.content = sub.content
-        else:
-            sub.content = newContentLines[i]
-            i += 1
-    finalOutputFile = open(OFILE, "w", encoding="utf-8")
-    finalOutputFile.write(srt.compose(subtitlesList))
-
 def output_SRT(answer, subtitles_list):
     print("Response received. Processing response into SRT and outputting")
     outputfile = open(OFILE, "w", encoding="utf-8")
