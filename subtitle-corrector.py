@@ -42,9 +42,9 @@ You MUST preserve the newlines.'''
 # Parses the SRT file into raw text data delimited by newlines.
 def srt_to_text(file_name):
     print("Formatting: " + file_name)
-    srt_file = open(file_name)
+    srt_file = open(file_name, encoding="utf-8")
     subtitles_list = list(srt.parse(srt_file.read()))
-    ofile_raw_text = open(ORAW_TEXT_UNIX, "w")
+    ofile_raw_text = open(ORAW_TEXT_UNIX, "w", encoding="utf-8")
     for sub in subtitles_list:
         ofile_raw_text.write(sub.content + "\n")
     print("Formatted: " + file_name)
@@ -55,7 +55,7 @@ def srt_to_text(file_name):
 # [deprecated]
 def manual_process(subtitles_list):
     input("Press enter when processed data is placed into output/newContent.txt...")
-    newContentFile = open("./input/newContent.txt", "r")
+    newContentFile = open("./input/newContent.txt", "r", encoding="utf-8")
     newContentLines = newContentFile.readlines()
     i = 0
     for sub in subtitlesList:
@@ -64,11 +64,11 @@ def manual_process(subtitles_list):
         else:
             sub.content = newContentLines[i]
             i += 1
-    finalOutputFile = open(OSRT_UNIX, "w")
+    finalOutputFile = open(OSRT_UNIX, "w", encoding="utf-8")
     finalOutputFile.write(srt.compose(subtitlesList))
 
 def output_SRT(answer, subtitles_list):
-    outputfile = open(OSRT_UNIX, "w")
+    outputfile = open(OSRT_UNIX, "w", encoding="utf-8")
     new_content_lines = answer.splitlines()
     i = 0
     for sub in subtitles_list:
@@ -97,7 +97,7 @@ def query_chatgpt(question):
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def auto_process(subtitles_list):
-    query = open(ORAW_TEXT_UNIX, "r")
+    query = open(ORAW_TEXT_UNIX, "r", encoding="utf-8")
     raw_text = query.read()
     answer, log = query_chatgpt(raw_text);
     output_SRT(answer, subtitles_list)
