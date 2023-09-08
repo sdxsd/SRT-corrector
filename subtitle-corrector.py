@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import openai
 import srt
 import sys
@@ -26,6 +27,7 @@ def srt_to_text(file_name):
 
 # Requires the user to manually access chatgpt and get the required output. Program will
 # be paused until user confirms that the replacement subtitles are available.
+# [deprecated]
 def manual_process(subtitles_list):
     input("Press enter when processed data is placed into output/newContent.txt...")
     newContentFile = open("./input/newContent.txt", "r")
@@ -53,17 +55,26 @@ def query_chatgpt(question):
     chat_log.append({'role': 'assistant', 'content': answer})
     return answer, chat_log
 
+def auto_process():
+    query = open(ORAW_TEXT_UNIX, "r")
+    raw_text = query.read()
+    answer, log = query_chatgpt(raw_text);
+
+def arg_parser_init():
+    parser = argparse.ArgumentParser(
+        prog="subtitle-corrector",
+        description="Corrects subtitles by using ChatGPT",
+        epilog="subtitle-corrector")
+    parser.add_argument('filename', required=True)
+    parser.add_argument('-m', '--manual', dest="manual_mode", required=False, default=False)
+    return (parser)
 
 def main():
-    if (len(sys.argv) < 3):
-        print("Please enter the path to a valid SRT file & the mode you want to use.")
-    subtitles_list = srt_to_text(sys.argv[1])
-    if (sys.argv[2] == 'a'):
-        answer, log = query_chatgpt("This is a test, please respond with ok.")
-        print
-    elif (sys.argv[2] == 'm'):
+    parser = arg_parser_init()
+    args = parser.parse_args()
+    subtitles_list = srt_to_text(args.filename)
+    if (args.manual_mode == True):
         manual_process(subtitles_list)
     else:
-        print("Please enter either a or m to indicate whether you will use the automatic or manual process")
-
+        auto_process()
 main()
