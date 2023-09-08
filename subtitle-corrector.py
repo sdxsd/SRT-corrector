@@ -32,8 +32,8 @@ import sys
 from sys import platform # OS checking
 import os
 
-ORAW_TEXT_NT = 'output\raw_SRT_text.txt'
-OSRT_NT = 'output\output.srt'
+ORAW_TEXT_NT = 'output/raw_SRT_text.txt'
+OSRT_NT = 'output/output.srt'
 ORAW_TEXT_UNIX = "./output/raw_SRT_text.txt"
 OSRT_UNIX = "./output/output.srt"
 subtitle_correction_prompt = '''You are going to help correct the subtitles for a talk given at a
@@ -71,6 +71,7 @@ def manual_process(subtitles_list):
     finalOutputFile.write(srt.compose(subtitlesList))
 
 def output_SRT(answer, subtitles_list):
+    print("Outputting SRT")
     outputfile = open(OSRT_NT, "w", encoding="utf-8")
     new_content_lines = answer.splitlines()
     i = 0
@@ -81,6 +82,7 @@ def output_SRT(answer, subtitles_list):
             sub.content = new_content_lines[i]
             i += 1
     outputfile.write(srt.compose(subtitles_list))
+    print("Done!")
 
 # Queries ChatGPT with the stripped SRT data.
 def query_chatgpt(question):
@@ -92,7 +94,7 @@ def query_chatgpt(question):
         'content': "Translate every line of the next input to Dutch",
     }]
     chat_log.append({'role': 'user', 'content': question})
-    response = client.create(model='gpt-3.5-turbo', messages=chat_log)
+    response = client.create(model='gpt-3.5-turbo-16k', messages=chat_log)
     answer = response.choices[0]['message']['content']
     chat_log.append({'role': 'assistant', 'content': answer})
     print("Processing response into SRT")
