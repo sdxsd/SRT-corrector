@@ -120,10 +120,10 @@ def arg_parser_init():
     return (parser)
 
 # Main.
-def main():
-    parser = arg_parser_init()
-    args = parser.parse_args()
-    subtitles_list = srt_to_text(args.input_srt)
-    auto_process(subtitles_list)
+# def main():
+#     parser = arg_parser_init()
+#     args = parser.parse_args()
+#     subtitles_list = srt_to_text(args.input_srt)
+#     auto_process(subtitles_list)
 
-main()
+# main()

@@ -5,22 +5,26 @@ import tkinter as tk
 from tkinter import filedialog
 
 class SRTCorrectorGui:
-    # Atrributes:
-    subtitle_file_path = ""
-
-    # Methods:
+    # Process file.
     def process_subtitle(self):
         self.sfile_status_label.config(text="Processing started...")
+        subtitles_list = st.srt_to_text(self.subtitle_file_path)
+        st.auto_process(subtitles_list)
+        self.sfile_status_label.config(text="Processing completed.")
+
+    # Select file.
     def choose_file(self):
-        subtitle_file_path = filedialog.askopenfilename()
-        if subtitle_file_path:
+        self.subtitle_file_path = filedialog.askopenfilename()
+        if self.subtitle_file_path:
             self.path_entry.config(state="normal")
             self.path_entry.delete(0, tk.END)
-            self.path_entry.insert(0, subtitle_file_path)
+            self.path_entry.insert(0, self.subtitle_file_path)
             self.path_entry.config(state="readonly")
             self.sfile_process_button.config(state="normal", text="Process subtitle file")
+
     # Constructor
     def __init__(self):
+        subtitle_file_path = ""
         # Window initialisation.
         self.root_window = tk.Tk()
         self.root_window.title = "Subtitle Corrector GUI"
