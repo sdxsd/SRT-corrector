@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import subtitlecorrector as st
 import tkinter as tk
 from tkinter import filedialog
 
@@ -23,7 +24,7 @@ class SRTCorrectorGui:
         # Window initialisation.
         self.root_window = tk.Tk()
         self.root_window.title = "Subtitle Corrector GUI"
-        self.root_window.geometry("400x300")
+        self.root_window.geometry("400x150")
         # File selection.
         self.file_frame = tk.Frame(master=self.root_window, width=100, height=100)
         self.sfile_path_label = tk.Label(
