@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import subtitlecorrector as st
+import subtitlecorrector as stc
 import tkinter as tk
 from tkinter import filedialog
 
@@ -8,8 +8,8 @@ class SRTCorrectorGui:
     # Process file.
     def process_subtitle(self):
         self.sfile_status_label.config(text="Processing started...")
-        subtitles_list = st.srt_to_text(self.subtitle_file_path)
-        st.auto_process(subtitles_list)
+        subtitles_list = stc.srt_to_text(self.subtitle_file_path)
+        stc.auto_process(subtitles_list)
         self.sfile_status_label.config(text="Processing completed.")
 
     # Select file.

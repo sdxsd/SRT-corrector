@@ -107,23 +107,3 @@ def auto_process(subtitles_list):
     print(query_count)
     # answer, log = query_chatgpt(raw_text);
     # output_SRT(answer, subtitles_list)
-
-# Creates the argument parser.
-# These python libraries are actually pretty cool.
-def arg_parser_init():
-    parser = argparse.ArgumentParser(
-        prog="subtitle-corrector",
-        description="Corrects subtitles by using ChatGPT",
-        epilog="subtitle-corrector")
-    parser.add_argument('input_srt')
-    parser.add_argument('--ofile', action='store', default=OFILE)
-    return (parser)
-
-# Main.
-# def main():
-#     parser = arg_parser_init()
-#     args = parser.parse_args()
-#     subtitles_list = srt_to_text(args.input_srt)
-#     auto_process(subtitles_list)
-
-# main()
