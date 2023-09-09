@@ -115,18 +115,15 @@ def arg_parser_init():
         prog="subtitle-corrector",
         description="Corrects subtitles by using ChatGPT",
         epilog="subtitle-corrector")
-    parser.add_argument('filename')
-    parser.add_argument('-m', '--manual', dest="manual_mode", required=False, default=False)
+    parser.add_argument('input_srt')
+    parser.add_argument('--ofile', action='store', default=OFILE)
     return (parser)
 
 # Main.
 def main():
     parser = arg_parser_init()
     args = parser.parse_args()
-    subtitles_list = srt_to_text(args.filename)
-    if (args.manual_mode == True):
-        manual_process(subtitles_list)
-    else:
-        auto_process(subtitles_list)
+    subtitles_list = srt_to_text(args.input_srt)
+    auto_process(subtitles_list)
 
 main()
