@@ -3,14 +3,18 @@
 import subtitlecorrector as stc
 import tkinter as tk
 from tkinter import filedialog
+import platform
 
 class SRTCorrectorGui:
     # Process file.
     def process_subtitle(self):
-        self.sfile_status_label.config(text="Processing started...")
-        subtitles_list = stc.srt_to_text(self.subtitle_file_path)
-        stc.auto_process(subtitles_list)
-        self.sfile_status_label.config(text="Processing completed.")
+        if (self.full_output_path != "" and self.subtitle_file_path != ""):
+            self.sfile_status_label.config(text="Processing started...")
+            subtitles_list = stc.srt_to_text(self.subtitle_file_path)
+            stc.auto_process(subtitles_list, self.full_output_path)
+            self.sfile_status_label.config(text="Processing completed.")
+        else:
+            self.sfile_status_label.config(text="Please select the path to the input subtitle and the path for the output.")
 
     # Select file.
     def choose_file(self):
@@ -22,14 +26,22 @@ class SRTCorrectorGui:
             self.path_entry.config(state="readonly")
             self.sfile_process_button.config(state="normal", text="Process subtitle file")
 
-    # Constructor
-    def __init__(self):
-        subtitle_file_path = ""
-        # Window initialisation.
-        self.root_window = tk.Tk()
-        self.root_window.title = "Subtitle Corrector GUI"
-        self.root_window.geometry("400x150")
-        # File selection.
+    def choose_odir(self):
+        self.output_dir = filedialog.askdirectory()
+        if self.output_dir:
+            if (platform.system() == "Linux" or platform.system() == "Darwin"):
+                self.full_output_path = self.output_dir + "/" + "output.srt"
+            else:
+                self.full_output_path = self.output_dir + "\\" + "output.srt"
+            self.ofile_path.config(state="normal")
+            self.ofile_path.delete(0, tk.END)
+            self.ofile_path.insert(0, self.full_output_path)
+            self.ofile_path.config(state="readonly")
+            open(self.full_output_path, "w+")
+
+
+    # Sets up the GUI for selecting a file.
+    def file_selection_GUI(self):
         self.file_frame = tk.Frame(master=self.root_window, width=100, height=100)
         self.sfile_path_label = tk.Label(
             master=self.file_frame,
@@ -45,8 +57,31 @@ class SRTCorrectorGui:
             text="Select subtitle file...",
             command=self.choose_file
         )
+        self.path_entry.config(readonlybackground=self.path_entry.cget("background"))
+        self.file_frame.pack(fill=tk.X)
+        self.sfile_path_label.pack(side="left")
+        self.path_entry.pack(side="left")
+        self.sfile_button.pack(side="left")
+
+    def ofile_selection_GUI(self):
+        self.outputfile_frame = tk.Frame(master=self.root_window, width=100, height=100)
+        self.ofile_label = tk.Label(master=self.outputfile_frame, text="Output folder:")
+        self.ofile_path = tk.Entry(master=self.outputfile_frame, width=40, state="readonly")
+        self.ofile_button = tk.Button(
+            master=self.outputfile_frame,
+            text="Select output folder...",
+            command=self.choose_odir
+        )
+        self.ofile_path.config(readonlybackground=self.ofile_path.cget("background"))
+        self.outputfile_frame.pack(fill=tk.X)
+        self.ofile_label.pack(side="left")
+        self.ofile_path.pack(side="left")
+        self.ofile_button.pack(side="left")
+
+    # Sets up the GUI for processing a file.
+    def processing_GUI(self):
         self.sfile_status_label = tk.Label(
-            master=self.file_frame,
+            master=self.root_window,
             text="Status: processing not started",
         )
         self.sfile_process_button = tk.Button(
@@ -55,13 +90,22 @@ class SRTCorrectorGui:
             command=self.process_subtitle,
             state=tk.DISABLED
         )
-        self.path_entry.config(readonlybackground=self.path_entry.cget("background"))
-        self.file_frame.pack(fill=tk.X)
-        self.sfile_path_label.pack()
-        self.path_entry.pack()
-        self.sfile_button.pack()
         self.sfile_status_label.pack()
         self.sfile_process_button.pack()
+
+    # Constructor
+    def __init__(self):
+        self.subtitle_file_path = ""
+        self.full_output_path = ""
+        self.output_dir = ""
+        # Window initialisation.
+        self.root_window = tk.Tk()
+        self.root_window.title = "Subtitle Corrector GUI"
+        self.root_window.geometry("600x150")
+
+        self.file_selection_GUI()
+        self.ofile_selection_GUI()
+        self.processing_GUI()
 
 
 def main():

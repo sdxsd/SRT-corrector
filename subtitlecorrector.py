@@ -25,7 +25,6 @@
 
 # A program is free software if users have all of these freedoms.
 
-import argparse
 import openai
 import srt
 import sys
@@ -59,7 +58,9 @@ def srt_to_text(file_name):
     print("Formatted: " + file_name)
     return (subtitles_list)
 
-def output_SRT(answer, subtitles_list):
+def output_SRT(answer, subtitles_list, ofile_path):
+    if (ofile_path):
+        OFILE = ofile_path
     print("Response received. Processing response into SRT and outputting")
     outputfile = open(OFILE, "w", encoding="utf-8")
     new_content_lines = answer.splitlines()
@@ -95,7 +96,7 @@ def num_tokens_from_string(raw_text):
     return num_tokens
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
-def auto_process(subtitles_list):
+def auto_process(subtitles_list, outputfile=""):
     query = open(ORAW_TEXT, "r", encoding="utf-8")
     raw_text = query.read()
     token_num = num_tokens_from_string(raw_text)
@@ -105,5 +106,5 @@ def auto_process(subtitles_list):
         token_num /= 2
         query_count += 1
     print(query_count)
-    # answer, log = query_chatgpt(raw_text);
-    # output_SRT(answer, subtitles_list)
+    answer, log = query_chatgpt(raw_text);
+    output_SRT(answer, subtitles_list, outputfile)
