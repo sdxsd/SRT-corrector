@@ -1,4 +1,6 @@
-# SRT-Corrector / Subtitle Corrector
+![Logo](icns/Icon1024.png)
+
+# Subtitle Corrector
 This program aims to streamline the process of error checking automatically generated subtitles by leveraging ChatGPT.
 ## Usage:
 ### Installing openai API key:
@@ -13,16 +15,25 @@ Open your terminal and run the following commands:
 echo 'export OPENAI_API_KEY="[insert your key here between the brackets]"' >> ~/.zshrc (.bashrc if on GNU + Linux)
 ```
 ### Using the program:
-You can invoke the program from the terminal as so:
+#### GUI
+![Screenshot](icns/screenshot.png)
+To invoke the program in GUI mode, run the following command:
 ```
-Windows: python3 .\subtitle_corrector.py example.srt
-macOS/GNU + Linux: ./subtitle_corrector.py example.srt
+Windows: python3 .\SRT-gui.py
+macOS/GNU + Linux: ./SRT-gui.py
+```
+With the GUI you can specify the output folder and the input subtitle file to be corrected.
+When both are selected, simply click the "Process subtitle" button.
+#### TUI
+You can invoke the program in TUI mode as so:
+```
+Windows: python3 .\SRT-tui.py example.srt
+macOS/GNU + Linux: ./SRT-tui.py example.srt
 ```
 The program will then query ChatGPT and write it's response to a new file called output.srt, which will be located in the output directory.
 ### Notes:
 This program is still a WIP and thusly cannot be considered entirely ready for use. As to what needs to be worked on, I give the following:
 - Splitting the input into multiple queries thus getting the output for the entire file.
-- GUI mode
 - The production of a diff between the original and modified subtitles for easier error checking.
 
 #### License:
