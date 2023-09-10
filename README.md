@@ -1,4 +1,3 @@
-![Logo](icns/Icon1024.png)
 <img src="icns/Icon1024.png" width="256"/>
 
 # Subtitle Corrector
