@@ -30,6 +30,6 @@ def main():
     parser = arg_parser_init()
     args = parser.parse_args()
     subtitles_list = stc.srt_to_text(args.input_srt)
-    stc.auto_process(subtitles_list)
+    stc.correct_subtitles(subtitles_list)
 
 main()

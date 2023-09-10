@@ -11,7 +11,7 @@ class SRTCorrectorGui:
         if (self.full_output_path != "" and self.subtitle_file_path != ""):
             self.sfile_status_label.config(text="Processing started...")
             subtitles_list = stc.srt_to_text(self.subtitle_file_path)
-            stc.auto_process(subtitles_list, self.full_output_path)
+            stc.correct_subtitles(subtitles_list, self.full_output_path)
             self.sfile_status_label.config(text="Processing completed.")
         else:
             self.sfile_status_label.config(text="Please select the path to the input subtitle and the path for the output.")
@@ -43,15 +43,8 @@ class SRTCorrectorGui:
     # Sets up the GUI for selecting a file.
     def file_selection_GUI(self):
         self.file_frame = tk.Frame(master=self.root_window, width=100, height=100)
-        self.sfile_path_label = tk.Label(
-            master=self.file_frame,
-            text="Subtitle file: ",
-        )
-        self.path_entry = tk.Entry(
-            master=self.file_frame,
-            width=40,
-            state="readonly"
-        )
+        self.sfile_path_label = tk.Label(master=self.file_frame, text="Subtitle file: ")
+        self.path_entry = tk.Entry(master=self.file_frame, width=40, state="readonly")
         self.sfile_button = tk.Button(
             master=self.file_frame,
             text="Select subtitle file...",

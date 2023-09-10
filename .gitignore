@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Custom
+input/
+output/
+test.srt
+
 # C extensions
 *.so
 

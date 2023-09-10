@@ -75,7 +75,7 @@ def output_SRT(answer, subtitles_list, ofile_path):
     print("Done!")
 
 # Queries ChatGPT with the stripped SRT data.
-def query_chatgpt(question):
+def query_chatgpt(raw_text):
     print("Querying ChatGPT")
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     client = openai.ChatCompletion()
@@ -83,23 +83,23 @@ def query_chatgpt(question):
         'role': 'system',
         'content': subtitle_correction_prompt,
     }]
-    chat_log.append({'role': 'user', 'content': question})
+    chat_log.append({'role': 'user', 'content': raw_text})
     response = client.create(model='gpt-3.5-turbo-16k', messages=chat_log)
     answer = response.choices[0]['message']['content']
     chat_log.append({'role': 'assistant', 'content': answer})
     return answer, chat_log
 
-def num_tokens_from_string(raw_text):
+def num_tokens(raw_text):
     print("Calculating number of tokens")
     encoding = tiktoken.get_encoding("gpt2")
     num_tokens = len(encoding.encode(raw_text))
     return num_tokens
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
-def auto_process(subtitles_list, outputfile=""):
+def correct_subtitles(subtitles_list, outputfile=""):
     query = open(ORAW_TEXT, "r", encoding="utf-8")
     raw_text = query.read()
-    token_num = num_tokens_from_string(raw_text)
+    token_count = num_tokens(raw_text)
     print("Number of tokens:", token_num)
     query_count = 0
     while (token_num > 1250):
