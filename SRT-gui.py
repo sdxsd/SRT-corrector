@@ -99,6 +99,9 @@ class SRTCorrectorGui:
         self.file_selection_GUI()
         self.ofile_selection_GUI()
         self.processing_GUI()
+        self.license_label = tk.Label(self.root_window, text="Subtitle Corrector (C) Will Maguire 2023 is Free Software licensed under the GNU GPLv3")
+        self.license_label.pack(side="bottom")
+
 
 
 def main():

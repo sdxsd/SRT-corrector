@@ -11,7 +11,8 @@ options = {
         'tiktoken',
         'cchardet',
         'chardet'
-    ]
+    ],
+    'iconfile': './icns/SRT-corrector.icns'
 }
 
 setup(
