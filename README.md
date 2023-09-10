@@ -1,4 +1,5 @@
 ![Logo](icns/Icon1024.png)
+<img src="icns/Icon1024.png" width="256"/>
 
 # Subtitle Corrector
 This program aims to streamline the process of error checking automatically generated subtitles by leveraging ChatGPT.
