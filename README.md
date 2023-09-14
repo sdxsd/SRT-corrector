@@ -17,6 +17,10 @@ echo 'export OPENAI_API_KEY="[insert your key here between the brackets]"' >> ~/
 ### Using the program:
 #### GUI
 ![Screenshot](icns/screenshot.png)
+
+##### EXE:
+Double click the Executable as with any other program.
+##### Through Python:
 To invoke the program in GUI mode, run the following command:
 ```
 Windows: python3 .\SRT-gui.py
