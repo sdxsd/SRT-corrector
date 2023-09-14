@@ -47,14 +47,14 @@ class SRTCorrectorGui:
         self.path_entry = tk.Entry(master=self.file_frame, width=40, state="readonly")
         self.sfile_button = tk.Button(
             master=self.file_frame,
-            text="Select subtitle file...",
+            text="Select...",
             command=self.choose_file
         )
         self.path_entry.config(readonlybackground=self.path_entry.cget("background"))
         self.file_frame.pack(fill=tk.X)
-        self.sfile_path_label.pack(side="left")
-        self.path_entry.pack(side="left")
-        self.sfile_button.pack(side="left")
+        self.sfile_path_label.pack(padx=10, side="left")
+        self.path_entry.pack(padx=10, side="left")
+        self.sfile_button.pack(padx=10, side="left")
 
     def ofile_selection_GUI(self):
         self.outputfile_frame = tk.Frame(master=self.root_window, width=100, height=100)
@@ -62,14 +62,14 @@ class SRTCorrectorGui:
         self.ofile_path = tk.Entry(master=self.outputfile_frame, width=40, state="readonly")
         self.ofile_button = tk.Button(
             master=self.outputfile_frame,
-            text="Select output folder...",
+            text="Select...",
             command=self.choose_odir
         )
         self.ofile_path.config(readonlybackground=self.ofile_path.cget("background"))
         self.outputfile_frame.pack(fill=tk.X)
-        self.ofile_label.pack(side="left")
-        self.ofile_path.pack(side="left")
-        self.ofile_button.pack(side="left")
+        self.ofile_label.pack(padx=5, side="left")
+        self.ofile_path.pack(padx=10, side="left")
+        self.ofile_button.pack(padx=10, side="left")
 
     # Sets up the GUI for processing a file.
     def processing_GUI(self):
@@ -94,12 +94,12 @@ class SRTCorrectorGui:
         # Window initialisation.
         self.root_window = tk.Tk()
         self.root_window.title = "Subtitle Corrector GUI"
-        self.root_window.geometry("600x150")
+        self.root_window.geometry("425x150")
 
         self.file_selection_GUI()
         self.ofile_selection_GUI()
         self.processing_GUI()
-        self.license_label = tk.Label(self.root_window, text="Subtitle Corrector (C) Will Maguire 2023 is Free Software licensed under the GNU GPLv3")
+        self.license_label = tk.Label(self.root_window, text="Subtitle Corrector is Free Software licensed under the GNU GPLv3")
         self.license_label.pack(side="bottom")
 
 

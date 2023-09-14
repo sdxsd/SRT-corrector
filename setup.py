@@ -2,6 +2,8 @@
 
 from setuptools import setup
 
+# To create EXE for windows run "pyinstaller .\SRT-gui.py --windowed --onefile"
+
 APP = ['SRT-gui.py']
 DATA_FILES = []
 options = {
