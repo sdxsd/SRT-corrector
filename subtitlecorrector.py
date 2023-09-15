@@ -32,79 +32,94 @@ import os
 import platform
 import tiktoken
 
-ORAW_TEXT = ""
-OFILE = ""
-if (platform.system() == "Linux" or platform.system() == "Darwin"):
-    ORAW_TEXT = "./output/raw_SRT_text.txt"
-    OFILE = "./output/output.srt"
-elif (platform.system() == 'Windows'):
-    ORAW_TEXT = 'output/raw_SRT_text.txt'
-    OFILE = 'output/output.srt'
+subtitle_correction_prompt = '''
+You are going to act as a program designed to help correct subtitles.
+You will be correcting automatically generated subtitles from a talk at a programming school.
+You will be given an input in the .srt format.
+You will be doing the following: Please correct out of place words. Removing redundant and or filler words.
+Keep the content of the sentences consistent with the input. Your goal is correction not replacement.
+The number of lines in the output must be the same as the number of lines in the input.
+Please stick close to the style and spirit of the original input.
+Make sure to preserve the subtitle id.
+'''
 
-subtitle_correction_prompt = '''You are going to help correct the subtitles for a talk given at a
-programming school. You will be provided with an input, each newline is a new subtitle.
-Your job is to remove redundant words, fix grammar, and make sure that sentences make sense in the context.
-You are going to output the modified subtitles in the same format as it was given.
-You MUST preserve the newlines.'''
-
-# Parses the SRT file into raw text data delimited by newlines.
 def srt_to_text(file_name):
     print("Formatting: " + file_name)
     srt_file = open(file_name, encoding="utf-8")
     subtitles_list = list(srt.parse(srt_file.read()))
-    ofile_raw_text = open(ORAW_TEXT, "w", encoding="utf-8")
+    ofile_raw_text = open("stripped_srt.txt", "w", encoding="utf-8")
     for sub in subtitles_list:
-        ofile_raw_text.write(sub.content + "\n")
+        ofile_raw_text.write(str(sub.index) + os.linesep)
+        ofile_raw_text.write(sub.content + os.linesep)
+        ofile_raw_text.write(os.linesep)
     print("Formatted: " + file_name)
     return (subtitles_list)
 
-def output_SRT(answer, subtitles_list, ofile_path):
-    if (ofile_path):
-        OFILE = ofile_path
-    print("Response received. Processing response into SRT and outputting")
-    outputfile = open(OFILE, "w", encoding="utf-8")
-    new_content_lines = answer.splitlines()
-    i = 0
-    for sub in subtitles_list:
-        if (i > len(new_content_lines) - 1):
-            sub.content = sub.content
-        else:
-            sub.content = new_content_lines[i]
-            i += 1
-    outputfile.write(srt.compose(subtitles_list))
-    print("Done!")
-
 # Queries ChatGPT with the stripped SRT data.
-def query_chatgpt(raw_text):
-    print("Querying ChatGPT")
+def query_chatgpt(query_str):
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     client = openai.ChatCompletion()
     chat_log = [{
         'role': 'system',
         'content': subtitle_correction_prompt,
     }]
-    chat_log.append({'role': 'user', 'content': raw_text})
-    response = client.create(model='gpt-3.5-turbo-16k', messages=chat_log)
+    chat_log.append({'role': 'user', 'content': query_str})
+    response = client.create(model='gpt-4', messages=chat_log)
     answer = response.choices[0]['message']['content']
     chat_log.append({'role': 'assistant', 'content': answer})
     return answer, chat_log
 
 def num_tokens(raw_text):
-    print("Calculating number of tokens")
     encoding = tiktoken.get_encoding("gpt2")
     num_tokens = len(encoding.encode(raw_text))
     return num_tokens
 
+def query_loop(subtitle_file):
+    full_output = ""
+    query_str = ""
+    query_counter = 0
+    slist = srt_to_text(subtitle_file)
+    raw_outputfile = open("raw_output.txt", "w", encoding="utf-8")
+    
+    for sub in slist:
+        print(str(sub.index))
+        query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
+        token_count = num_tokens(query_str)
+        if (token_count > 300):
+            query_counter += 1
+            print("Sending query with token count: ", token_count, " | Query count: ", query_counter)
+            answer, log = query_chatgpt(query_str)
+            answer += os.linesep        
+            full_output += answer
+            raw_outputfile.write(answer)
+            raw_outputfile.flush()
+            query_str = ""
+    if (query_str != ""):
+        query_counter += 1
+        print("Sending query with token count: ", token_count, " | Query count: ", query_counter)
+        answer, log = query_chatgpt(query_str)
+        raw_outputfile.write(answer)
+        raw_outputfile.flush()
+        full_output += answer
+
+    print("Queries sent & responses received")
+    outputlines = full_output.splitlines()
+    i = -1
+    for sub in slist:
+        sub.content = ""
+    for line in outputlines:
+        if (line.isdigit() == True):
+            i += 1
+        elif (line != ""): 
+            if (slist[i].content != ""):
+                slist[i].content += " "
+            slist[i].content += line
+        elif (line == ""):
+            continue 
+    return (srt.compose(slist))
+
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
-def correct_subtitles(subtitles_list, outputfile=""):
-    query = open(ORAW_TEXT, "r", encoding="utf-8")
-    raw_text = query.read()
-    token_count = num_tokens(raw_text)
-    print("Number of tokens:", token_num)
-    query_count = 0
-    while (token_num > 1250):
-        token_num /= 2
-        query_count += 1
-    print(query_count)
-    answer, log = query_chatgpt(raw_text);
-    output_SRT(answer, subtitles_list, outputfile)
+def correct_subtitles(subtitle_file, outputfile="output.srt"):
+    full_output = query_loop(subtitle_file)
+    ofile = open(outputfile, "w", encoding="utf-8")
+    ofile.write(full_output)

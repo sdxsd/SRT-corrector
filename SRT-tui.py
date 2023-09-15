@@ -29,7 +29,6 @@ def arg_parser_init():
 def main():
     parser = arg_parser_init()
     args = parser.parse_args()
-    subtitles_list = stc.srt_to_text(args.input_srt)
-    stc.correct_subtitles(subtitles_list)
+    stc.correct_subtitles(args.input_srt, args.ofile)
 
 main()
