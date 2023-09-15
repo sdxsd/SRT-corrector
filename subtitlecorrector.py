@@ -39,8 +39,8 @@ You will be given an input in the .srt format.
 You will be doing the following: Please correct out of place words. Removing redundant and or filler words.
 Keep the content of the sentences consistent with the input. Your goal is correction not replacement.
 The number of lines in the output must be the same as the number of lines in the input.
-Please stick close to the style and spirit of the original input.
 Make sure to preserve the subtitle id.
+Please do not use overly formal language.
 '''
 
 def srt_to_text(file_name):
@@ -82,7 +82,6 @@ def query_loop(subtitle_file):
     raw_outputfile = open("raw_output.txt", "w", encoding="utf-8")
     
     for sub in slist:
-        print(str(sub.index))
         query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
         token_count = num_tokens(query_str)
         if (token_count > 300):
