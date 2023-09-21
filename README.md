@@ -21,24 +21,13 @@ echo 'export OPENAI_API_KEY="[insert your key here between the brackets]"' >> ~/
 ##### EXE:
 Double click the Executable as with any other program.
 ##### Through Python:
-To invoke the program in GUI mode, run the following command:
-```
-Windows: python3 .\SRT-gui.py
-macOS/GNU + Linux: ./SRT-gui.py
-```
-With the GUI you can specify the output folder and the input subtitle file to be corrected.
-When both are selected, simply click the "Process subtitle" button.
 #### TUI
 You can invoke the program in TUI mode as so:
 ```
-Windows: python3 .\SRT-tui.py example.srt
-macOS/GNU + Linux: ./SRT-tui.py example.srt
+Windows: python3 .\SRT-tui.py example.srt --ofile example_output.srt
+macOS/GNU + Linux: ./SRT-tui.py example.srt --ofile example_output.srt
 ```
 The program will then query ChatGPT and write it's response to a new file called output.srt, which will be located in the output directory.
-### Notes:
-This program is still a WIP and thusly cannot be considered entirely ready for use. As to what needs to be worked on, I give the following:
-- Splitting the input into multiple queries thus getting the output for the entire file.
-- The production of a diff between the original and modified subtitles for easier error checking.
 
 #### License:
 This program is licensed under the GNU General Public License Version 3, and thus is Free Software. 
