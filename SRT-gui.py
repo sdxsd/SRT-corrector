@@ -10,8 +10,7 @@ class SRTCorrectorGui:
     def process_subtitle(self):
         if (self.full_output_path != "" and self.subtitle_file_path != ""):
             self.sfile_status_label.config(text="Processing started...")
-            subtitles_list = stc.srt_to_text(self.subtitle_file_path)
-            stc.correct_subtitles(subtitles_list, self.full_output_path)
+            stc.correct_subtitles(self.subtitle_file_path, self.full_output_path)
             self.sfile_status_label.config(text="Processing completed.")
         else:
             self.sfile_status_label.config(text="Please select the path to the input subtitle and the path for the output.")
@@ -32,7 +31,7 @@ class SRTCorrectorGui:
             if (platform.system() == "Linux" or platform.system() == "Darwin"):
                 self.full_output_path = self.output_dir + "/" + "output.srt"
             else:
-                self.full_output_path = self.output_dir + "\\" + "output.srt"
+                self.full_output_path = self.output_dir + "/" + "output.srt"
             self.ofile_path.config(state="normal")
             self.ofile_path.delete(0, tk.END)
             self.ofile_path.insert(0, self.full_output_path)
