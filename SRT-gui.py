@@ -2,6 +2,7 @@
 
 import subtitlecorrector as stc
 import tkinter as tk
+from tkinter import *
 from tkinter import filedialog
 import platform
 
@@ -10,7 +11,8 @@ class SRTCorrectorGui:
     def process_subtitle(self):
         if (self.full_output_path != "" and self.subtitle_file_path != ""):
             self.sfile_status_label.config(text="Processing started...")
-            stc.correct_subtitles(self.subtitle_file_path, self.full_output_path)
+            self.selected_prompt.set(self.prompts[self.selected_prompt.get()])
+            stc.correct_subtitles(self.subtitle_file_path, self.full_output_path, self.selected_prompt.get())
             self.sfile_status_label.config(text="Processing completed.")
         else:
             self.sfile_status_label.config(text="Please select the path to the input subtitle and the path for the output.")
@@ -37,7 +39,6 @@ class SRTCorrectorGui:
             self.ofile_path.insert(0, self.full_output_path)
             self.ofile_path.config(state="readonly")
             open(self.full_output_path, "w+")
-
 
     # Sets up the GUI for selecting a file.
     def file_selection_GUI(self):
@@ -87,21 +88,33 @@ class SRTCorrectorGui:
 
     # Constructor
     def __init__(self):
+        # Variables:
         self.subtitle_file_path = ""
         self.full_output_path = ""
         self.output_dir = ""
-        # Window initialisation.
+        self.prompts = {
+            'Prompt: Subtitle Correction': 1,
+            'Prompt: Dutch to English' : 2,
+            'Prompt: English to Dutch' : 3
+        }
+
+        # Window initialisation:
         self.root_window = tk.Tk()
         self.root_window.title = "Subtitle Corrector GUI"
         self.root_window.geometry("425x150")
 
+        # Prompt Selection:
+        self.selected_prompt = StringVar(self.root_window)
+        self.selected_prompt.set(self.prompts['Prompt: Subtitle Correction'])
+        self.prompt_select = OptionMenu(self.root_window, self.selected_prompt, *self.prompts)
+        self.prompt_select.pack()
+
+        # General setup:
         self.file_selection_GUI()
         self.ofile_selection_GUI()
         self.processing_GUI()
         self.license_label = tk.Label(self.root_window, text="Subtitle Corrector is Free Software licensed under the GNU GPLv3")
         self.license_label.pack(side="bottom")
-
-
 
 def main():
     SRT_corrector = SRTCorrectorGui()

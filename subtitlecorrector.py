@@ -32,13 +32,25 @@ import os
 import platform
 import tiktoken
 
-subtitle_translation_prompt = '''
+
+dutch_to_english_prompt = '''
 Je gaat optreden als een programma ontworpen om ondertitels naar het Engels te vertalen.
 Je zult automatisch gegenereerde ondertitels vertalen.
 Je krijgt een invoer in het .srt-formaat.
 Je gaat het volgende doen: Foutief geplaatste woorden corrigeren. Overbodige en/of vulwoorden verwijderen.
 Het aantal regels in de uitvoer moet hetzelfde zijn als het aantal regels in de invoer.
 Zorg ervoor dat je de ondertitel-ID behoudt
+'''
+
+english_to_dutch_prompt = '''
+You are going to act as a program designed to help translate subtitles.
+You will be translating automatically generated subtitles from Dutch to English.
+You will be given an input in the .srt format.
+You will be doing the following: Translating Dutch sentences into English. Correcting out of place words. Removing redundant and or filler words.
+Keep the content of the sentences consistent with the input.
+The number of lines in the output must be the same as the number of lines in the input.
+Make sure to preserve the subtitle id.
+Please do not use overly formal language.
 '''
 
 subtitle_correction_prompt = '''
@@ -51,6 +63,12 @@ The number of lines in the output must be the same as the number of lines in the
 Make sure to preserve the subtitle id.
 Please do not use overly formal language.
 '''
+
+prompt_list = {
+    1: subtitle_correction_prompt,
+    2: dutch_to_english_prompt,
+    3: english_to_dutch_prompt
+}
 
 def srt_to_text(file_name):
     print("Formatting: " + file_name)
@@ -65,12 +83,12 @@ def srt_to_text(file_name):
     return (subtitles_list)
 
 # Queries ChatGPT with the stripped SRT data.
-def query_chatgpt(query_str):
+def query_chatgpt(query_str, chosen_prompt):
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     client = openai.ChatCompletion()
     chat_log = [{
         'role': 'system',
-        'content': subtitle_correction_prompt,
+        'content': prompt_list[int(chosen_prompt)],
     }]
     chat_log.append({'role': 'user', 'content': query_str})
     response = client.create(model='gpt-4', messages=chat_log)
@@ -83,7 +101,7 @@ def num_tokens(raw_text):
     num_tokens = len(encoding.encode(raw_text))
     return num_tokens
 
-def query_loop(subtitle_file):
+def query_loop(subtitle_file, chosen_prompt):
     full_output = ""
     query_str = ""
     query_counter = 0
@@ -129,7 +147,8 @@ def query_loop(subtitle_file):
     return (srt.compose(slist))
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
-def correct_subtitles(subtitle_file, outputfile="output.srt"):
-    full_output = query_loop(subtitle_file)
-    ofile = open(outputfile, "w", encoding="utf-8")
-    ofile.write(full_output)
+def correct_subtitles(subtitle_file, outputfile="output.srt", chosen_prompt=1):
+    print(prompt_list[int(chosen_prompt)])
+    #full_output = query_loop(subtitle_file, chosen_prompt)
+    #ofile = open(outputfile, "w", encoding="utf-8")
+    #ofile.write(full_output)
