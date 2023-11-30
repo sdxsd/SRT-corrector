@@ -32,6 +32,14 @@ import os
 import platform
 import tiktoken
 
+subtitle_translation_prompt = '''
+Je gaat optreden als een programma ontworpen om ondertitels naar het Engels te vertalen.
+Je zult automatisch gegenereerde ondertitels vertalen.
+Je krijgt een invoer in het .srt-formaat.
+Je gaat het volgende doen: Foutief geplaatste woorden corrigeren. Overbodige en/of vulwoorden verwijderen.
+Het aantal regels in de uitvoer moet hetzelfde zijn als het aantal regels in de invoer.
+Zorg ervoor dat je de ondertitel-ID behoudt
+'''
 subtitle_correction_prompt = '''
 You are going to act as a program designed to help modify subtitles.
 You will be given an input in the .srt format.
