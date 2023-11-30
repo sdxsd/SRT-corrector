@@ -44,9 +44,9 @@ Zorg ervoor dat je de ondertitel-ID behoudt
 
 english_to_dutch_prompt = '''
 You are going to act as a program designed to help translate subtitles.
-You will be translating automatically generated subtitles from Dutch to English.
+You will be translating automatically generated subtitles from English to Dutch.
 You will be given an input in the .srt format.
-You will be doing the following: Translating Dutch sentences into English. Correcting out of place words. Removing redundant and or filler words.
+You will be doing the following: Translating English sentences into Dutch. Correcting out of place words. Removing redundant and or filler words.
 Keep the content of the sentences consistent with the input.
 The number of lines in the output must be the same as the number of lines in the input.
 Make sure to preserve the subtitle id.
@@ -138,7 +138,6 @@ def query_loop(subtitle_file, chosen_prompt):
                 answer, log = query_chatgpt(query_str, chosen_prompt)
                 if (answer[-1] != '\n'):
                     answer += '\n' 
-            print(answer)
             full_output += (answer)
             raw_outputfile.write(answer)
             raw_outputfile.flush()
