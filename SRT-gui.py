@@ -5,17 +5,22 @@ import tkinter as tk
 from tkinter import *
 from tkinter import filedialog
 import platform
+import os
 
 class SRTCorrectorGui:
     # Process file.
     def process_subtitle(self):
         if (self.full_output_path != "" and self.subtitle_file_path != ""):
             self.sfile_status_label.config(text="Processing started...")
-            self.selected_prompt.set(self.prompts[self.selected_prompt.get()])
-            stc.correct_subtitles(self.subtitle_file_path, self.full_output_path, self.selected_prompt.get())
+            stc.correct_subtitles(self.subtitle_file_path, self.full_output_path, self.prompts[self.selected_prompt.get()])
             self.sfile_status_label.config(text="Processing completed.")
         else:
             self.sfile_status_label.config(text="Please select the path to the input subtitle and the path for the output.")
+
+    # Select prompt.
+    def prompt_selected(self, *args):
+        if (self.selected_prompt.get() != 0):
+            self.sfile_button.config(state="normal")
 
     # Select file.
     def choose_file(self):
@@ -25,20 +30,18 @@ class SRTCorrectorGui:
             self.path_entry.delete(0, tk.END)
             self.path_entry.insert(0, self.subtitle_file_path)
             self.path_entry.config(state="readonly")
-            self.sfile_process_button.config(state="normal", text="Process subtitle file")
+            self.ofile_button.config(state="normal")
 
     def choose_odir(self):
         self.output_dir = filedialog.askdirectory()
         if self.output_dir:
-            if (platform.system() == "Linux" or platform.system() == "Darwin"):
-                self.full_output_path = self.output_dir + "/" + "output.srt"
-            else:
-                self.full_output_path = self.output_dir + "/" + "output.srt"
+            self.full_output_path = self.output_dir + "/" + "corrected_" + os.path.basename(self.subtitle_file_path)
             self.ofile_path.config(state="normal")
             self.ofile_path.delete(0, tk.END)
             self.ofile_path.insert(0, self.full_output_path)
             self.ofile_path.config(state="readonly")
             open(self.full_output_path, "w+")
+            self.sfile_process_button.config(state="normal", text="Process subtitle file")
 
     # Sets up the GUI for selecting a file.
     def file_selection_GUI(self):
@@ -48,7 +51,8 @@ class SRTCorrectorGui:
         self.sfile_button = tk.Button(
             master=self.file_frame,
             text="Select...",
-            command=self.choose_file
+            command=self.choose_file,
+            state=tk.DISABLED
         )
         self.path_entry.config(readonlybackground=self.path_entry.cget("background"))
         self.file_frame.pack(fill=tk.X)
@@ -63,7 +67,8 @@ class SRTCorrectorGui:
         self.ofile_button = tk.Button(
             master=self.outputfile_frame,
             text="Select...",
-            command=self.choose_odir
+            command=self.choose_odir,
+            state=tk.DISABLED
         )
         self.ofile_path.config(readonlybackground=self.ofile_path.cget("background"))
         self.outputfile_frame.pack(fill=tk.X)
@@ -94,8 +99,8 @@ class SRTCorrectorGui:
         self.output_dir = ""
         self.prompts = {
             'Prompt: Subtitle Correction': 1,
-            'Prompt: Dutch to English' : 2,
-            'Prompt: English to Dutch' : 3
+            'Prompt: Dutch to English': 2,
+            'Prompt: English to Dutch': 3
         }
 
         # Window initialisation:
@@ -105,8 +110,8 @@ class SRTCorrectorGui:
 
         # Prompt Selection:
         self.selected_prompt = StringVar(self.root_window)
-        self.selected_prompt.set(self.prompts['Prompt: Subtitle Correction'])
-        self.prompt_select = OptionMenu(self.root_window, self.selected_prompt, *self.prompts)
+        self.selected_prompt.set("Select prompt...")
+        self.prompt_select = OptionMenu(self.root_window, self.selected_prompt, *self.prompts, command=self.prompt_selected)
         self.prompt_select.pack()
 
         # General setup:

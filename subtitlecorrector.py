@@ -148,7 +148,6 @@ def query_loop(subtitle_file, chosen_prompt):
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def correct_subtitles(subtitle_file, outputfile="output.srt", chosen_prompt=1):
-    print(prompt_list[int(chosen_prompt)])
-    #full_output = query_loop(subtitle_file, chosen_prompt)
-    #ofile = open(outputfile, "w", encoding="utf-8")
-    #ofile.write(full_output)
+    full_output = query_loop(subtitle_file, chosen_prompt)
+    ofile = open(outputfile, "w", encoding="utf-8")
+    ofile.write(full_output)
