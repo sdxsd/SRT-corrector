@@ -74,12 +74,7 @@ def srt_to_text(file_name):
     print("Formatting: " + file_name)
     srt_file = open(file_name, encoding="utf-8")
     subtitles_list = list(srt.parse(srt_file.read()))
-    ofile_raw_text = open("stripped_srt.txt", "w", encoding="utf-8")
-    for sub in subtitles_list:
-        ofile_raw_text.write(str(sub.index) + os.linesep)
-        ofile_raw_text.write(sub.content + os.linesep)
-        ofile_raw_text.write(os.linesep)
-    print("Formatted: " + file_name)
+    srt_file.close()
     return (subtitles_list)
 
 # Queries ChatGPT with the stripped SRT data.
@@ -115,6 +110,21 @@ def count_subs(subs):
                 i += 1
     return (subcount)
 
+def estimate_total_queries(slist):
+    query = ""
+    for sub in slist:
+        query += (str(sub.index) + os.linesep + sub.content + os.linesep)
+    token_count = num_tokens(query)
+    query_count = 0
+    while (token_count > 300):
+        token_count -= 300
+        query_count += 1
+    if (token_count > 0):
+        query_count += 1
+    return (query_count)
+
+def report_status(token_count, query_counter, total_queries):
+    print("Sending query with token count: ", token_count, " | Query count: ", query_counter, "/", total_queries)
 
 def query_loop(subtitle_file, chosen_prompt):
     full_output = ""
@@ -122,13 +132,14 @@ def query_loop(subtitle_file, chosen_prompt):
     query_counter = 0
     slist = srt_to_text(subtitle_file)
     raw_outputfile = open("raw_output.txt", "w", encoding="utf-8")
+    total_queries = estimate_total_queries(slist)
     
     for sub in slist:
         query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
         token_count = num_tokens(query_str)
         if (token_count > 300):
             query_counter += 1
-            print("Sending query with token count: ", token_count, " | Query count: ", query_counter)
+            report_status(token_count, query_counter, total_queries)
             answer, log = query_chatgpt(query_str, chosen_prompt)
             if (answer[-1] != '\n'):
                 answer += '\n' 
@@ -144,7 +155,7 @@ def query_loop(subtitle_file, chosen_prompt):
             query_str = ""
     if (query_str != ""):
         query_counter += 1
-        print("Sending query with token count: ", token_count, " | Query count: ", query_counter)
+        report_status(token_count, query_counter, total_queries)
         answer, log = query_chatgpt(query_str)
         raw_outputfile.write(answer)
         raw_outputfile.flush()
