@@ -33,14 +33,12 @@ import platform
 import tiktoken
 
 subtitle_correction_prompt = '''
-You are going to act as a program designed to help correct subtitles.
-You will be correcting automatically generated subtitles from a talk at a programming school.
-You will be given an input in the .srt format.
-You will be doing the following: Please correct out of place words. Removing redundant and or filler words.
-Keep the content of the sentences consistent with the input. Your goal is correction not replacement.
-The number of lines in the output must be the same as the number of lines in the input.
-Make sure to preserve the subtitle id.
-Please do not use overly formal language.
+Je gaat optreden als een programma ontworpen om ondertitels naar het Engels te vertalen.
+Je zult automatisch gegenereerde ondertitels vertalen.
+Je krijgt een invoer in het .srt-formaat.
+Je gaat het volgende doen: Foutief geplaatste woorden corrigeren. Overbodige en/of vulwoorden verwijderen.
+Het aantal regels in de uitvoer moet hetzelfde zijn als het aantal regels in de invoer.
+Zorg ervoor dat je de ondertitel-ID behoudt
 '''
 
 def srt_to_text(file_name):
