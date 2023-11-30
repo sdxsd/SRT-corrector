@@ -3,7 +3,7 @@
 from setuptools import setup
 
 # To create EXE for windows:
-# .\pyinstaller.exe --onefile --hidden-import=tiktoken_ext.openai_public --hidden-import=tiktoken_ext --windowed
+# .\pyinstaller.exe SRT-gui.py --onefile --hidden-import=tiktoken_ext.openai_public --hidden-import=tiktoken_ext
 
 APP = ['SRT-gui.py']
 DATA_FILES = []
