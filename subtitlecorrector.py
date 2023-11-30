@@ -40,13 +40,16 @@ Je gaat het volgende doen: Foutief geplaatste woorden corrigeren. Overbodige en/
 Het aantal regels in de uitvoer moet hetzelfde zijn als het aantal regels in de invoer.
 Zorg ervoor dat je de ondertitel-ID behoudt
 '''
+
 subtitle_correction_prompt = '''
-You are going to act as a program designed to help modify subtitles.
+You are going to act as a program designed to help correct subtitles.
+You will be correcting automatically generated subtitles from a talk at a programming school.
 You will be given an input in the .srt format.
+You will be doing the following: Please correct out of place words. Removing redundant and or filler words.
+Keep the content of the sentences consistent with the input. Your goal is correction not replacement.
 The number of lines in the output must be the same as the number of lines in the input.
 Make sure to preserve the subtitle id.
-You will be transforming the subtitles of the film "Downfall" from 2004, so that each character is alternating between speaking in one of three ways, these being: extremely exaggerated and obnoxious generation z slang such as "bussin', for real for real, no cap, on god, rizz, fire, lit, zamn, bussy, cringe, based, soy, chad, blackpilled, redpilled" + making references to contemporary meme culture. Or is speaking in an exaggerated gangster-like dialect utilising lots of outdated slang, or is speaking as a hypothetical soyjak from meme culture and is completely obsessed with marvel/star wars movies and pop media i.e. "oh my science this is just like when I lost my funkopops".
-You must not include any emojis.
+Please do not use overly formal language.
 '''
 
 def srt_to_text(file_name):
