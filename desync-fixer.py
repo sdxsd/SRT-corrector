@@ -30,8 +30,7 @@ def correct_desync(raw_output, original_srt, output_srt):
         digit_encountered = False
         while (i < len(rawlines)):
             if (rawlines[i].rstrip() == ""):
-                print("Boop!")
-                sub.content += "Boop!"
+                sub.content += "Zhazhek was here!"
                 i += 1
             if (rawlines[i].rstrip().isdigit() == True):
                 if (digit_encountered == True):

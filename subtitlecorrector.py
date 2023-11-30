@@ -101,6 +101,21 @@ def num_tokens(raw_text):
     num_tokens = len(encoding.encode(raw_text))
     return num_tokens
 
+def count_subs(subs):
+    rawlines = subs.splitlines()
+    subcount = 0
+    i = 0
+    while (i < len(rawlines)):
+            if (rawlines[i].rstrip() == ""):
+                i += 1
+            if (rawlines[i].rstrip().isdigit() == True):
+                    subcount += 1
+                    i += 1
+            elif (rawlines[i] != ""):
+                i += 1
+    return (subcount)
+
+
 def query_loop(subtitle_file, chosen_prompt):
     full_output = ""
     query_str = ""
@@ -111,12 +126,18 @@ def query_loop(subtitle_file, chosen_prompt):
     for sub in slist:
         query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
         token_count = num_tokens(query_str)
-        if (token_count > 150):
+        if (token_count > 300):
             query_counter += 1
             print("Sending query with token count: ", token_count, " | Query count: ", query_counter)
-            answer, log = query_chatgpt(query_str)
+            answer, log = query_chatgpt(query_str, chosen_prompt)
             if (answer[-1] != '\n'):
                 answer += '\n' 
+            while (count_subs(answer) != count_subs(query_str)):
+                query_counter += 1
+                print("Inconsistent output, resending query: ", token_count, " | Query count: ", query_counter)
+                answer, log = query_chatgpt(query_str, chosen_prompt)
+                if (answer[-1] != '\n'):
+                    answer += '\n' 
             print(answer)
             full_output += (answer)
             raw_outputfile.write(answer)
@@ -131,19 +152,25 @@ def query_loop(subtitle_file, chosen_prompt):
         full_output += (answer)
 
     print("Queries sent & responses received")
-    outputlines = full_output.splitlines()
-    i = -1
+    rawlines = full_output.splitlines()
+    i = 0
     for sub in slist:
         sub.content = ""
-    for line in outputlines:
-        if (line.isdigit() == True):
-            i += 1
-        elif (line != ""): 
-            if (slist[i].content != ""):
-                slist[i].content += " "
-            slist[i].content += line
-        elif (line == ""):
-            continue 
+        digit_encountered = False
+        while (i < len(rawlines)):
+            if (rawlines[i].rstrip() == ""):
+                sub.content += "Zhazhek was here!"
+                i += 1
+            if (rawlines[i].rstrip().isdigit() == True):
+                if (digit_encountered == True):
+                    digit_encountered = False
+                    break
+                else:
+                    i += 1
+                    digit_encountered = True
+            elif (rawlines[i] != ""):
+                sub.content += rawlines[i]
+                i += 1
     return (srt.compose(slist))
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
