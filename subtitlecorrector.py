@@ -143,6 +143,8 @@ class SubtitleCorrector:
                         i += 1
                         digit_encountered = True
                 elif (rawlines[i] != ""):
+                    if (sub.content != ""):
+                        sub.content += " "
                     sub.content += rawlines[i]
                     i += 1
         return (srt.compose(slist))
