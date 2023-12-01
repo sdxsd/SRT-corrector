@@ -155,7 +155,7 @@ class SubtitleCorrector:
         self.query_counter += 1
         self.report_status()
         answer = self.query_chatgpt(query_str)
-        while (count_subs(answer) != count_subs(query_str)):
+        while (self.count_subs(answer) != self.count_subs(query_str)):
             print("Inconsistent output, resending query: ", token_count, " | Query count: ", query_counter)
             self.total_queries += 1
             self.query_counter += 1
