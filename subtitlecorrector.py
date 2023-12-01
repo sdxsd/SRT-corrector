@@ -84,11 +84,13 @@ class SubtitleCorrector:
                     answer += '\n' 
         return answer
     
+    # Counts the number of tokens in a given string.
     def num_tokens(self, raw_text):
         encoding = tiktoken.get_encoding("gpt2")
         num_tokens = len(encoding.encode(raw_text))
         return num_tokens
     
+    # Counts the number of subtitle blocks in a given string.
     def count_subs(self, subs):
         rawlines = subs.splitlines()
         subcount = 0
@@ -103,6 +105,7 @@ class SubtitleCorrector:
                     i += 1
         return (subcount)
     
+    # Estimates the total queries required for the file using token counts.
     def estimate_total_queries(self, slist):
         query = ""
         for sub in slist:
@@ -116,9 +119,12 @@ class SubtitleCorrector:
             query_count += 1
         return (query_count)
     
+    # Keeps the user informed.
     def report_status(self):
         print("Sending query with token count: ", self.token_count, " | Query count: ", self.query_counter, "/", self.total_queries)
     
+    # Replaces the "content" variable of the original subtitle block list
+    # using the sum of the responses from GPT4. 
     def replace_sub_content(self, full_output, slist):
         rawlines = full_output.splitlines()
         i = 0
@@ -141,6 +147,10 @@ class SubtitleCorrector:
                     i += 1
         return (srt.compose(slist))
     
+    # Sends a query with a number of subtitle blocks and then merges
+    # response into full_output.
+    # If a response does not contain the same amount of sub blocks
+    # as the query, then the query is resent until it is successful.
     def send_and_receive(self, query_str):
         self.query_counter += 1
         self.report_status()
@@ -154,6 +164,8 @@ class SubtitleCorrector:
         self.raw_outputfile.write(answer)
         self.raw_outputfile.flush()
     
+    # Loops through subtitle blocks and calls send_and_receive() when
+    # the amount of tokens is enough for a query.
     def query_loop(self, subtitle_file):
         slist = list(srt.parse(open(subtitle_file, "r", encoding="utf-8")))
         self.total_queries = self.estimate_total_queries(slist)
