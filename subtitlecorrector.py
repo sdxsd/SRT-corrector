@@ -170,8 +170,7 @@ class SubtitleCorrector:
                 query_str = ""
         responses = await asyncio.gather(*queries)
         print("Queries sent & responses received")
-        subs = ''.join(responses)
-        return (self.replace_sub_content(subs, slist))
+        return (self.replace_sub_content(''.join(responses), slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def correct_subtitles(subtitle_file, outputfile="output.srt", chosen_prompt=1):
