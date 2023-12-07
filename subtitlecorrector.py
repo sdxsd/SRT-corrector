@@ -25,7 +25,8 @@
 
 # A program is free software if users have all of these freedoms.
 
-from openai import OpenAI
+from openai import AsyncOpenAI
+import asyncio
 import srt
 import sys
 import os
@@ -63,23 +64,20 @@ class SubtitleCorrector:
         }
         
         self.chosen_prompt = chosen_prompt
-        self.full_output = ""
         self.query_counter = 0
         self.total_queries = 0
-        self.raw_outputfile = open("raw_output.txt", "w", encoding="utf-8")
         
     # Queries ChatGPT with the stripped SRT data.
-    def query_chatgpt(self, query_str):
-        client = OpenAI()
-        print(client.api_key)
-        response = client.chat.completions.create(
+    async def query_chatgpt(self, query_str):
+        client = AsyncOpenAI()
+        response = await client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {'role': 'system', 'content': self.prompt_list[int(self.chosen_prompt)]},
                 {'role': 'user', 'content': query_str},
             ]
         )
-        answer = response.choices[0]['message']['content']
+        answer = response.choices[0].message.content
         if (answer[-1] != '\n'):
             answer += '\n' 
         return answer
@@ -96,13 +94,13 @@ class SubtitleCorrector:
         subcount = 0
         i = 0
         while (i < len(rawlines)):
-                if (rawlines[i].rstrip() == ""):
-                    i += 1
-                if (rawlines[i].rstrip().isdigit() == True):
-                        subcount += 1
-                        i += 1
-                elif (rawlines[i] != ""):
-                    i += 1
+            if (rawlines[i].rstrip() == ""):
+                i += 1
+            if (rawlines[i].rstrip().isdigit() == True):
+                subcount += 1
+                i += 1
+            elif (rawlines[i] != ""):
+                i += 1
         return (subcount)
     
     # Estimates the total queries required for the file using token counts.
@@ -149,44 +147,38 @@ class SubtitleCorrector:
                     i += 1
         return (srt.compose(slist))
     
-    # Sends a query with a number of subtitle blocks and then merges
-    # response into full_output.
-    # If a response does not contain the same amount of sub blocks
-    # as the query, then the query is resent until it is successful.
-    def send_and_receive(self, query_str):
+    async def send_and_receive(self, query_str):
         self.query_counter += 1
         self.report_status()
-        answer = self.query_chatgpt(query_str)
+        answer = await self.query_chatgpt(query_str)
         while (self.count_subs(answer) != self.count_subs(query_str)):
             print("Inconsistent output, resending query: ", self.token_count, " | Query count: ", self.query_counter)
             self.total_queries += 1
             self.query_counter += 1
-            answer = self.query_chatgpt(query_str)
-        self.full_output += answer
-        self.raw_outputfile.write(answer)
-        self.raw_outputfile.flush()
+            answer = await self.query_chatgpt(query_str)
+        return answer
     
-    # Loops through subtitle blocks and calls send_and_receive() when
-    # the amount of tokens is enough for a query.
-    def query_loop(self, subtitle_file):
+    async def query_loop(self, subtitle_file):
+        queries = []
         slist = list(srt.parse(open(subtitle_file, "r", encoding="utf-8")))
         self.total_queries = self.estimate_total_queries(slist)
         print("Parsed: ", subtitle_file, " | ", "Estimated number of queries: ", self.total_queries)
         query_str = ""
-     
         for sub in slist:
             query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
             self.token_count = self.num_tokens(query_str)
             if (self.token_count > 300 or (slist[-1].index == sub.index)):
-                self.send_and_receive(query_str)
-                query_str = ""    
+                queries.append(self.send_and_receive(query_str))
+                query_str = ""
+        responses = await asyncio.gather(*queries)
         print("Queries sent & responses received")
-        return (self.replace_sub_content(self.full_output, slist))
+        subs = ''.join(responses)
+        return (self.replace_sub_content(subs, slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def correct_subtitles(subtitle_file, outputfile="output.srt", chosen_prompt=1):
     subtitlecorrector = SubtitleCorrector(chosen_prompt)
-    full_output = subtitlecorrector.query_loop(subtitle_file)
+    full_output = asyncio.run(subtitlecorrector.query_loop(subtitle_file))
     ofile = open(outputfile, "w", encoding="utf-8")
     ofile.write(full_output)
         
