@@ -28,9 +28,7 @@
 from openai import AsyncOpenAI
 import asyncio
 import srt
-import sys
 import os
-import platform
 import tiktoken
 
 class SubtitleCorrector:
