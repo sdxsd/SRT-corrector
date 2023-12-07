@@ -69,7 +69,7 @@ class SubtitleCorrector:
     async def query_chatgpt(self, query_str):
         client = AsyncOpenAI()
         response = await client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {'role': 'system', 'content': self.prompt_list[int(self.chosen_prompt)]},
                 {'role': 'user', 'content': query_str},
@@ -149,25 +149,22 @@ class SubtitleCorrector:
         self.query_counter += 1
         self.report_status(token_count)
         answer = await self.query_chatgpt(query_str)
-        while (self.count_subs(answer) != self.count_subs(query_str)):
-            self.total_queries += 1
-            self.query_counter += 1
-            print("Inconsistent output, resending query: ", self.token_count, " | Query count: ", self.query_counter)
-            answer = await self.query_chatgpt(query_str)
+        #while (self.count_subs(answer) != self.count_subs(query_str)):
+        #    self.total_queries += 1
+        #    self.query_counter += 1
+        #    print("Inconsistent output, resending query: ", token_count, " | Query count: ", self.query_counter)
+        #    answer = await self.query_chatgpt(query_str)
         return answer
     
     async def query_loop(self, subtitle_file):
         queries = []
         slist = list(srt.parse(open(subtitle_file, "r", encoding="utf-8")))
-        self.total_queries = self.estimate_total_queries(slist)
+        self.total_queries = len(slist)
         print("Parsed: ", subtitle_file, " | ", "Estimated number of queries: ", self.total_queries)
-        query_str = ""
         for sub in slist:
-            query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
+            query_str = (str(sub.index) + os.linesep + sub.content + os.linesep)
             token_count = self.num_tokens(query_str)
-            if (token_count > 300 or (slist[-1].index == sub.index)):
-                queries.append(self.send_and_receive(query_str, token_count))
-                query_str = ""
+            queries.append(self.send_and_receive(query_str, token_count))
         responses = await asyncio.gather(*queries)
         print("Queries sent & responses received")
         return (self.replace_sub_content(''.join(responses), slist))
