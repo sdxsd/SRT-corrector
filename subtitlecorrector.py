@@ -76,20 +76,21 @@ Please do not use overly formal language.'''
         self.queries = []
         self.token_usage_input = 0
         self.token_usage_output = 0
+        self.client = AsyncOpenAI()
     
     def validate_finish_reason(self, finish_reason):
-        if (finish_reason == "stop"):
-            return 
-        elif (finish_reason == "length"):
-            raise QueryException(finish_reason, "Query failed due to exceeding the token limit.")
-        elif (finish_reason == "content_filter"):
-            raise QueryException(finish_reason, "Query failed due to violation of content policy")
-         
+        match finish_reason:
+            case "stop":
+                return
+            case "length":
+                raise QueryException(finish_reason, "Query failed due to exceeding the token limit.")
+            case "content_filter":
+                raise QueryException(finish_reason, "Query failed due to violation of content policy")
+
     # Queries ChatGPT with the stripped SRT data.
     async def query_chatgpt(self, query_str, query_number):
-        client = AsyncOpenAI()
         start = time.time()
-        response = await client.chat.completions.create(
+        response = await self.client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {'role': 'system', 'content': self.prompt_list[int(self.chosen_prompt)]},
@@ -107,25 +108,12 @@ Please do not use overly formal language.'''
     
     # Counts the number of tokens in a given string.
     def num_tokens(self, raw_text):
-        encoding = tiktoken.get_encoding("cl100k_base")
-        num_tokens = len(encoding.encode(raw_text))
-        return num_tokens
-    
-    # Counts the number of subtitle blocks in a given string.
+        return (len(tiktoken.get_encoding("cl100k_base").encode(raw_text)))
+
+    # I <3 one line functions.
     def count_subs(self, subs):
-        rawlines = subs.splitlines()
-        subcount = 0
-        i = 0
-        while (i < len(rawlines)):
-            if (rawlines[i].rstrip() == ""):
-                i += 1
-            if (rawlines[i].rstrip().isdigit() == True):
-                subcount += 1
-                i += 1
-            elif (rawlines[i] != ""):
-                i += 1
-        return (subcount)
-    
+        return (sum(map(lambda sub: sub.rstrip().isdigit() == True, subs.splitlines())))
+
     # Estimates the total queries required for the file using token counts.
     def estimate_total_queries(self, slist):
         query = ""
@@ -192,7 +180,7 @@ Please do not use overly formal language.'''
         return (round((input_price * self.token_usage_input) + (output_price * self.token_usage_output), 2))
         
     async def query_loop(self, subtitle_file):
-        slist = list(srt.parse(open(subtitle_file, "r", encoding="utf-8")))
+        slist = list(srt.parse(open(subtitle_file, "r", encoding="iso-8859-1")))
         self.total_queries = self.estimate_total_queries(slist)
         print("Parsed: ", subtitle_file, " | ", "Estimated number of queries: ", self.total_queries)
         query_str = ""
@@ -216,4 +204,3 @@ def correct_subtitles(subtitle_file, outputfile="output.srt", chosen_prompt=1):
     full_output = asyncio.run(subtitlecorrector.query_loop(subtitle_file))
     ofile = open(outputfile, "w", encoding="utf-8")
     ofile.write(full_output)
-        
