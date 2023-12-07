@@ -118,8 +118,8 @@ class SubtitleCorrector:
         return (query_count)
     
     # Keeps the user informed.
-    def report_status(self):
-        print("Sending query with token count: ", self.token_count, " | Query count: ", self.query_counter, "/", self.total_queries)
+    def report_status(self, token_count):
+        print("Sending query with token count: ", token_count, " | Query count: ", self.query_counter, "/", self.total_queries)
     
     # Replaces the "content" variable of the original subtitle block list
     # using the sum of the responses from GPT4. 
@@ -147,9 +147,9 @@ class SubtitleCorrector:
                     i += 1
         return (srt.compose(slist))
     
-    async def send_and_receive(self, query_str):
+    async def send_and_receive(self, query_str, token_count):
         self.query_counter += 1
-        self.report_status()
+        self.report_status(token_count)
         answer = await self.query_chatgpt(query_str)
         while (self.count_subs(answer) != self.count_subs(query_str)):
             self.total_queries += 1
@@ -166,9 +166,9 @@ class SubtitleCorrector:
         query_str = ""
         for sub in slist:
             query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
-            self.token_count = self.num_tokens(query_str)
-            if (self.token_count > 300 or (slist[-1].index == sub.index)):
-                queries.append(self.send_and_receive(query_str))
+            token_count = self.num_tokens(query_str)
+            if (token_count > 300 or (slist[-1].index == sub.index)):
+                queries.append(self.send_and_receive(query_str, token_count))
                 query_str = ""
         responses = await asyncio.gather(*queries)
         print("Queries sent & responses received")
