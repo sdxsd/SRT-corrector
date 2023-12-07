@@ -25,7 +25,7 @@
 
 # A program is free software if users have all of these freedoms.
 
-import openai
+from openai import OpenAI
 import srt
 import sys
 import os
@@ -70,23 +70,23 @@ class SubtitleCorrector:
         
     # Queries ChatGPT with the stripped SRT data.
     def query_chatgpt(self, query_str):
-        openai.api_key = os.environ.get('OPENAI_API_KEY')
-        client = openai.ChatCompletion()
-        chat_log = [{
-            'role': 'system',
-            'content': self.prompt_list[int(self.chosen_prompt)],
-        }]
-        chat_log.append({'role': 'user', 'content': query_str})
-        response = client.create(model='gpt-4', messages=chat_log)
+        client = OpenAI()
+        print(client.api_key)
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {'role': 'system', 'content': self.prompt_list[int(self.chosen_prompt)]},
+                {'role': 'user', 'content': query_str},
+            ]
+        )
         answer = response.choices[0]['message']['content']
-        chat_log.append({'role': 'assistant', 'content': answer})
         if (answer[-1] != '\n'):
-                    answer += '\n' 
+            answer += '\n' 
         return answer
     
     # Counts the number of tokens in a given string.
     def num_tokens(self, raw_text):
-        encoding = tiktoken.get_encoding("gpt2")
+        encoding = tiktoken.get_encoding("cl100k_base")
         num_tokens = len(encoding.encode(raw_text))
         return num_tokens
     
