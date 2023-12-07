@@ -74,7 +74,8 @@ Please do not use overly formal language.'''
         self.query_counter = 0
         self.total_queries = 0
         self.queries = []
-        self.token_usage = 0
+        self.token_usage_input = 0
+        self.token_usage_output = 0
     
     def validate_finish_reason(self, finish_reason):
         if (finish_reason == "stop"):
@@ -96,7 +97,8 @@ Please do not use overly formal language.'''
             ]
         )
         print("Query number: ", query_number, " | ", "Response received in: ", round((time.time() - start), 2), " seconds")
-        self.token_usage += response.usage.total_tokens
+        self.token_usage_input += response.usage.prompt_tokens
+        self.token_usage_output += response.usage.completion_tokens
         self.validate_finish_reason(response.choices[0].finish_reason)
         answer = response.choices[0].message.content
         if (answer[-1] != '\n'):
@@ -180,9 +182,14 @@ Please do not use overly formal language.'''
         return answer
     
     def handle_exception(self, exception):
-        print(exception.message)
+        print("Type: ", exception.type, " | Message: ", exception.message)
         for query in self.queries:
              query.cancel()
+             
+    def calculate_cost(self):
+        input_price = 0.01 / 1000
+        output_price = 0.03 / 1000
+        return (round((input_price * self.token_usage_input) + (output_price * self.token_usage_output), 2))
         
     async def query_loop(self, subtitle_file):
         slist = list(srt.parse(open(subtitle_file, "r", encoding="utf-8")))
@@ -200,6 +207,7 @@ Please do not use overly formal language.'''
         except QueryException as e:
             self.handle_exception(e)
         print("Queries sent & responses received")
+        print("Estimated cost: ", "€",self.calculate_cost())
         return (self.replace_sub_content(''.join(responses), slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
