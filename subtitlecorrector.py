@@ -77,7 +77,7 @@ Make sure to preserve the subtitle id.
 Please do not use overly formal language.'''
         }
          
-        self.tokens_per_query = 300
+        self.tokens_per_query = 150
         self.model = "gpt-4-1106-preview"
         self.chosen_prompt = chosen_prompt
         self.prompt_token_count = self.num_tokens(self.prompt_list[int(chosen_prompt)])
