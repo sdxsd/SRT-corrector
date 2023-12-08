@@ -30,7 +30,13 @@ import asyncio
 import srt
 import os
 import tiktoken
+import math
 import time
+
+# Globals:
+encoding = "iso-8859-1" if os.name == "posix" else "utf-8"
+input_price = 0.01 / 1000
+output_price = 0.03 / 1000
 
 class QueryException(Exception):
     def __init___(self, type, message):
@@ -69,6 +75,8 @@ Make sure to preserve the subtitle id.
 Please do not use overly formal language.'''
         }
          
+        self.tokens_per_query = 300
+        self.model = "gpt-4-1106-preview"
         self.chosen_prompt = chosen_prompt
         self.prompt_token_count = self.num_tokens(self.prompt_list[int(chosen_prompt)])
         self.query_counter = 0
@@ -91,7 +99,7 @@ Please do not use overly formal language.'''
     async def query_chatgpt(self, query_str, query_number):
         start = time.time()
         response = await self.client.chat.completions.create(
-            model="gpt-4",
+            model=self.model,
             messages=[
                 {'role': 'system', 'content': self.prompt_list[int(self.chosen_prompt)]},
                 {'role': 'user', 'content': query_str},
@@ -102,8 +110,8 @@ Please do not use overly formal language.'''
         self.token_usage_output += response.usage.completion_tokens
         self.validate_finish_reason(response.choices[0].finish_reason)
         answer = response.choices[0].message.content
-        if (answer[-1] != '\n'):
-            answer += '\n' 
+        if (answer[-1] != os.linesep):
+            answer += os.linesep
         return answer
     
     # Counts the number of tokens in a given string.
@@ -116,17 +124,10 @@ Please do not use overly formal language.'''
 
     # Estimates the total queries required for the file using token counts.
     def estimate_total_queries(self, slist):
-        query = ""
-        for sub in slist:
-            query += (str(sub.index) + os.linesep + sub.content + os.linesep)
-        token_count = self.num_tokens(query)
-        query_count = 0
-        while (token_count > 300):
-            token_count -= 300
-            query_count += 1
-        if (token_count > 0):
-            query_count += 1
-        return (query_count)
+        return (math.ceil(self.num_tokens(''.join(map(lambda sub: str(sub.index) + os.linesep + sub.content + os.linesep, slist))) / self.tokens_per_query))
+    
+    def calculate_cost(self):
+        return (round((input_price * self.token_usage_input) + (output_price * self.token_usage_output), 2))
     
     # Keeps the user informed.
     def report_status(self, token_count):
@@ -170,24 +171,18 @@ Please do not use overly formal language.'''
         return answer
     
     def handle_exception(self, exception):
-        print("Type: ", exception.type, " | Message: ", exception.message)
-        for query in self.queries:
-             query.cancel()
-             
-    def calculate_cost(self):
-        input_price = 0.01 / 1000
-        output_price = 0.03 / 1000
-        return (round((input_price * self.token_usage_input) + (output_price * self.token_usage_output), 2))
-        
+        print("EXCEPTION: Type: ", exception.type, " | Message: ", exception.message)
+        map(lambda query: query.cancel(), self.queries)
+                   
     async def query_loop(self, subtitle_file):
-        slist = list(srt.parse(open(subtitle_file, "r", encoding="iso-8859-1")))
+        slist = list(srt.parse(open(subtitle_file, "r", encoding=encoding)))
         self.total_queries = self.estimate_total_queries(slist)
         print("Parsed: ", subtitle_file, " | ", "Estimated number of queries: ", self.total_queries)
         query_str = ""
-        for sub in slist:
+        for sub in slist: 
             query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
             token_count = self.num_tokens(query_str)
-            if (token_count > 300 or (slist[-1].index == sub.index)):
+            if (token_count > self.tokens_per_query or (slist[-1].index == sub.index)):
                 self.queries.append(asyncio.create_task(self.send_and_receive(query_str, token_count)))
                 query_str = ""
         try:
@@ -195,12 +190,12 @@ Please do not use overly formal language.'''
         except QueryException as e:
             self.handle_exception(e)
         print("Queries sent & responses received")
-        print("Estimated cost: ", "€",self.calculate_cost())
+        print("Estimated cost: ", "€", self.calculate_cost())
         return (self.replace_sub_content(''.join(responses), slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def correct_subtitles(subtitle_file, outputfile="output.srt", chosen_prompt=1):
     subtitlecorrector = SubtitleCorrector(chosen_prompt)
     full_output = asyncio.run(subtitlecorrector.query_loop(subtitle_file))
-    ofile = open(outputfile, "w", encoding="utf-8")
+    ofile = open(outputfile, "w", encoding=encoding)
     ofile.write(full_output)
