@@ -25,168 +25,172 @@
 
 # A program is free software if users have all of these freedoms.
 
-from openai import OpenAI
+from openai import AsyncOpenAI
+import asyncio
 import srt
-import sys
 import os
-import platform
 import tiktoken
+import math
+import time
+
+# Globals:
+encoding = "iso-8859-1" if os.name == "posix" else "utf-8"
+input_price = 0.01 / 1000
+output_price = 0.03 / 1000
+
+class QueryException(Exception):
+    def __init___(self, type, message):
+        self.type = type
+        self.message = message
+        print(self.message)
+        super().__init__(message)
 
 class SubtitleCorrector:
     def __init__(self, chosen_prompt=1):
         self.prompt_list = {
-            1: '''
-                You are going to act as a program designed to help correct subtitles.
-                You will be correcting automatically generated subtitles from a talk at a programming school.
-                You will be given an input in the .srt format.
-                You will be doing the following: Please correct out of place words. Removing redundant and or filler words.
-                Keep the content of the sentences consistent with the input. Your goal is correction not replacement.
-                The number of lines in the output must be the same as the number of lines in the input.
-                Make sure to preserve the subtitle id.
-                Please do not use overly formal language.''',
-            2: '''
-                Je gaat optreden als een programma ontworpen om ondertitels naar het Engels te vertalen.
-                Je zult automatisch gegenereerde ondertitels vertalen.
-                Je krijgt een invoer in het .srt-formaat.
-                Je gaat het volgende doen: Foutief geplaatste woorden corrigeren. Overbodige en/of vulwoorden verwijderen.
-                Het aantal regels in de uitvoer moet hetzelfde zijn als het aantal regels in de invoer.
-                Zorg ervoor dat je de ondertitel-ID behoudt''',
-            3: '''
-                You are going to act as a program designed to help translate subtitles.
-                You will be translating automatically generated subtitles from English to Dutch.
-                You will be given an input in the .srt format.
-                You will be doing the following: Translating English sentences into Dutch. Correcting out of place words. Removing redundant and or filler words.
-                Keep the content of the sentences consistent with the input.
-                The number of lines in the output must be the same as the number of lines in the input.
-                Make sure to preserve the subtitle id.
-                Please do not use overly formal language.'''
+            1:
+'''You are going to act as a program designed to help correct subtitles. 
+You will be correcting automatically generated subtitles from a talk at a programming school.
+You will be given an input in the .srt format
+You will be doing the following: Please correct out of place words. Removing redundant and or filler words.
+Keep the content of the sentences consistent with the input. Your goal is correction not replacement.
+The number of lines in the output must be the same as the number of lines in the input.
+Make sure to preserve the subtitle id.
+Please do not use overly formal language.''',
+            2:
+'''You are going to act as a program designed to help translate subtitles.
+You will be translating automatically generated subtitles from Dutch to English.
+You will be given an input in the .srt format.
+You will be doing the following: Translating Dutch sentences into English. Correcting out of place words. Removing redundant and or filler words.
+Keep the content of the sentences consistent with the input.
+The number of lines in the output must be the same as the number of lines in the input.
+Make sure to preserve the subtitle id.
+Please do not use overly formal language.''',
+            3:
+'''You are going to act as a program designed to help translate subtitles.
+You will be translating automatically generated subtitles from English to Dutch.
+You will be given an input in the .srt format.
+You will be doing the following: Translating English sentences into Dutch. Correcting out of place words. Removing redundant and or filler words.
+Keep the content of the sentences consistent with the input.
+The number of lines in the output must be the same as the number of lines in the input.
+Make sure to preserve the subtitle id.
+Please do not use overly formal language.'''
         }
-        
+         
+        self.tokens_per_query = 150
+        self.model = "gpt-4-1106-preview"
         self.chosen_prompt = chosen_prompt
-        self.full_output = ""
+        self.prompt_token_count = self.num_tokens(self.prompt_list[int(chosen_prompt)])
         self.query_counter = 0
         self.total_queries = 0
-        self.raw_outputfile = open("raw_output.txt", "w", encoding="utf-8")
-        
+        self.queries = []
+        self.token_usage_input = 0
+        self.token_usage_output = 0
+        self.client = AsyncOpenAI()
+    
+    def validate_finish_reason(self, finish_reason):
+        match finish_reason:
+            case "stop":
+                return
+            case "length":
+                raise QueryException(finish_reason, "Query failed due to exceeding the token limit.")
+            case "content_filter":
+                raise QueryException(finish_reason, "Query failed due to violation of content policy")
+
     # Queries ChatGPT with the stripped SRT data.
-    def query_chatgpt(self, query_str):
-        client = OpenAI()
-        print(client.api_key)
-        response = client.chat.completions.create(
-            model="gpt-4",
+    async def query_chatgpt(self, query_str, query_number):
+        start = time.time()
+        response = await self.client.chat.completions.create(
+            model=self.model,
             messages=[
                 {'role': 'system', 'content': self.prompt_list[int(self.chosen_prompt)]},
                 {'role': 'user', 'content': query_str},
             ]
         )
-        answer = response.choices[0]['message']['content']
-        if (answer[-1] != '\n'):
-            answer += '\n' 
+        print("Query number: ", query_number, " | ", "Response received in: ", round((time.time() - start), 2), " seconds")
+        self.token_usage_input += response.usage.prompt_tokens
+        self.token_usage_output += response.usage.completion_tokens
+        self.validate_finish_reason(response.choices[0].finish_reason)
+        answer = response.choices[0].message.content
+        if (answer[-1] != os.linesep):
+            answer += os.linesep
         return answer
     
     # Counts the number of tokens in a given string.
     def num_tokens(self, raw_text):
-        encoding = tiktoken.get_encoding("cl100k_base")
-        num_tokens = len(encoding.encode(raw_text))
-        return num_tokens
-    
-    # Counts the number of subtitle blocks in a given string.
+        return (len(tiktoken.get_encoding("cl100k_base").encode(raw_text)))
+
+    # I <3 one line functions.
     def count_subs(self, subs):
-        rawlines = subs.splitlines()
-        subcount = 0
-        i = 0
-        while (i < len(rawlines)):
-                if (rawlines[i].rstrip() == ""):
-                    i += 1
-                if (rawlines[i].rstrip().isdigit() == True):
-                        subcount += 1
-                        i += 1
-                elif (rawlines[i] != ""):
-                    i += 1
-        return (subcount)
-    
+        return (sum(map(lambda sub: sub.rstrip().isdigit() == True, subs.splitlines())))
+
     # Estimates the total queries required for the file using token counts.
     def estimate_total_queries(self, slist):
-        query = ""
-        for sub in slist:
-            query += (str(sub.index) + os.linesep + sub.content + os.linesep)
-        token_count = self.num_tokens(query)
-        query_count = 0
-        while (token_count > 300):
-            token_count -= 300
-            query_count += 1
-        if (token_count > 0):
-            query_count += 1
-        return (query_count)
+        return (math.ceil(self.num_tokens(''.join(map(lambda sub: str(sub.index) + os.linesep + sub.content + os.linesep, slist))) / self.tokens_per_query))
+    
+    def calculate_cost(self):
+        return (round((input_price * self.token_usage_input) + (output_price * self.token_usage_output), 2))
     
     # Keeps the user informed.
-    def report_status(self):
-        print("Sending query with token count: ", self.token_count, " | Query count: ", self.query_counter, "/", self.total_queries)
+    def report_status(self, token_count):
+        print("Sending query with token count: ", (token_count + self.prompt_token_count), " | Query count: ", self.query_counter, "/", self.total_queries)
     
     # Replaces the "content" variable of the original subtitle block list
-    # using the sum of the responses from GPT4. 
-    def replace_sub_content(self, full_output, slist):
-        rawlines = full_output.splitlines()
+    # using the sum of the responses from GPT.
+    def replace_sub_content(self, rawlines, slist):
         i = 0
         for sub in slist:
             sub.content = ""
             digit_encountered = False
             while (i < len(rawlines)):
-                if (rawlines[i].rstrip() == ""):
-                    sub.content += "Zhazhek was here!"
-                    i += 1
                 if (rawlines[i].rstrip().isdigit() == True):
                     if (digit_encountered == True):
                         digit_encountered = False
                         break
                     else:
-                        i += 1
                         digit_encountered = True
-                elif (rawlines[i] != ""):
-                    if (sub.content != ""):
-                        sub.content += " "
-                    sub.content += rawlines[i]
-                    i += 1
+                else:
+                    sub.content += ((" " if sub.content else "") + (rawlines[i] if rawlines[i].rstrip() != "" else ""))
+                i += 1
         return (srt.compose(slist))
     
-    # Sends a query with a number of subtitle blocks and then merges
-    # response into full_output.
-    # If a response does not contain the same amount of sub blocks
-    # as the query, then the query is resent until it is successful.
-    def send_and_receive(self, query_str):
+    async def send_and_receive(self, query_str, token_count):
         self.query_counter += 1
-        self.report_status()
-        answer = self.query_chatgpt(query_str)
+        self.report_status(token_count)
+        answer = await self.query_chatgpt(query_str, self.query_counter)
         while (self.count_subs(answer) != self.count_subs(query_str)):
-            print("Inconsistent output, resending query: ", self.token_count, " | Query count: ", self.query_counter)
             self.total_queries += 1
             self.query_counter += 1
-            answer = self.query_chatgpt(query_str)
-        self.full_output += answer
-        self.raw_outputfile.write(answer)
-        self.raw_outputfile.flush()
+            print("Inconsistent output, resending query: ", token_count, " | Query count: ", self.query_counter)
+            answer = await self.query_chatgpt(query_str, self.query_counter)
+        return answer
     
-    # Loops through subtitle blocks and calls send_and_receive() when
-    # the amount of tokens is enough for a query.
-    def query_loop(self, subtitle_file):
-        slist = list(srt.parse(open(subtitle_file, "r", encoding="utf-8")))
+    def handle_exception(self, exception):
+        print("EXCEPTION: Type: ", exception.type, " | Message: ", exception.message)
+        map(lambda query: query.cancel(), self.queries)
+                   
+    async def query_loop(self, subtitle_file):
+        slist = list(srt.parse(open(subtitle_file, "r", encoding=encoding)))
         self.total_queries = self.estimate_total_queries(slist)
         print("Parsed: ", subtitle_file, " | ", "Estimated number of queries: ", self.total_queries)
         query_str = ""
-     
-        for sub in slist:
+        for sub in slist: 
             query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
-            self.token_count = self.num_tokens(query_str)
-            if (self.token_count > 300 or (slist[-1].index == sub.index)):
-                self.send_and_receive(query_str)
-                query_str = ""    
+            token_count = self.num_tokens(query_str)
+            if (token_count > self.tokens_per_query or (slist[-1].index == sub.index)):
+                self.queries.append(asyncio.create_task(self.send_and_receive(query_str, token_count)))
+                query_str = ""
+        try:
+            responses = await asyncio.gather(*self.queries)
+        except QueryException as e:
+            self.handle_exception(e)
         print("Queries sent & responses received")
-        return (self.replace_sub_content(self.full_output, slist))
+        print("Estimated cost: ", "€", self.calculate_cost())
+        return (self.replace_sub_content(''.join(responses).splitlines(), slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def correct_subtitles(subtitle_file, outputfile="output.srt", chosen_prompt=1):
     subtitlecorrector = SubtitleCorrector(chosen_prompt)
-    full_output = subtitlecorrector.query_loop(subtitle_file)
-    ofile = open(outputfile, "w", encoding="utf-8")
+    full_output = asyncio.run(subtitlecorrector.query_loop(subtitle_file))
+    ofile = open(outputfile, "w", encoding=encoding)
     ofile.write(full_output)
-        
