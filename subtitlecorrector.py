@@ -58,12 +58,14 @@ The number of lines in the output must be the same as the number of lines in the
 Make sure to preserve the subtitle id.
 Please do not use overly formal language.''',
             2:
-'''Je gaat optreden als een programma ontworpen om ondertitels naar het Engels te vertalen.
-Je zult automatisch gegenereerde ondertitels vertalen.
-Je krijgt een invoer in het .srt-formaat.
-Je gaat het volgende doen: Foutief geplaatste woorden corrigeren. Overbodige en/of vulwoorden verwijderen.
-Het aantal regels in de uitvoer moet hetzelfde zijn als het aantal regels in de invoer.
-Zorg ervoor dat je de ondertitel-ID behoudt''',
+'''You are going to act as a program designed to help translate subtitles.
+You will be translating automatically generated subtitles from Dutch to English.
+You will be given an input in the .srt format.
+You will be doing the following: Translating Dutch sentences into English. Correcting out of place words. Removing redundant and or filler words.
+Keep the content of the sentences consistent with the input.
+The number of lines in the output must be the same as the number of lines in the input.
+Make sure to preserve the subtitle id.
+Please do not use overly formal language.''',
             3:
 '''You are going to act as a program designed to help translate subtitles.
 You will be translating automatically generated subtitles from English to Dutch.
@@ -135,28 +137,21 @@ Please do not use overly formal language.'''
     
     # Replaces the "content" variable of the original subtitle block list
     # using the sum of the responses from GPT.
-    def replace_sub_content(self, full_output, slist):
-        rawlines = full_output.splitlines()
+    def replace_sub_content(self, rawlines, slist):
         i = 0
         for sub in slist:
             sub.content = ""
             digit_encountered = False
             while (i < len(rawlines)):
-                if (rawlines[i].rstrip() == ""):
-                    sub.content += "Zhazhek was here!"
-                    i += 1
                 if (rawlines[i].rstrip().isdigit() == True):
                     if (digit_encountered == True):
                         digit_encountered = False
                         break
                     else:
-                        i += 1
                         digit_encountered = True
-                elif (rawlines[i] != ""):
-                    if (sub.content != ""):
-                        sub.content += " "
-                    sub.content += rawlines[i]
-                    i += 1
+                else:
+                    sub.content += ((" " if sub.content else "") + (rawlines[i] if rawlines[i].rstrip() != "" else ""))
+                i += 1
         return (srt.compose(slist))
     
     async def send_and_receive(self, query_str, token_count):
@@ -191,7 +186,7 @@ Please do not use overly formal language.'''
             self.handle_exception(e)
         print("Queries sent & responses received")
         print("Estimated cost: ", "€", self.calculate_cost())
-        return (self.replace_sub_content(''.join(responses), slist))
+        return (self.replace_sub_content(''.join(responses).splitlines(), slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def correct_subtitles(subtitle_file, outputfile="output.srt", chosen_prompt=1):
