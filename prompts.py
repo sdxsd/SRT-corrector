@@ -1,5 +1,6 @@
 import json
 import os
+from os import walk
 
 # Every instance of this object within Prompt will be appended to the query sent
 # to OpenAI as examples for how ChatGPT should responded.
@@ -18,7 +19,6 @@ class PromptExample:
 class Prompt:
     def __init__(self, prompt):
         obj = json.loads(prompt)
-        self.model = obj["prompt_model"]
         self.prompt_name = obj["prompt_name"]
         self.prompt_instructions = os.linesep.join(obj["prompt_instructions"])
         self.prompt_examples = []
@@ -26,14 +26,26 @@ class Prompt:
             for example in obj["prompt_examples"]:
                 self.prompt_examples.append(PromptExample(example))
 
+# Instantiates a single Prompt object from a file.
+def load_prompt(file):
+    fp = open(file, "r")
+    prompt = Prompt(fp.read())
+    fp.close()
+    return (prompt)
+
 # Instantiates an array of Prompt objects from an array of filenames in string format.
 def load_prompts(prompt_files):
     prompts = []
     for file in prompt_files:
-        fp = open(file, "r")
-        prompts.append(Prompt(fp.read()))
-        fp.close()
+        prompts.append(load_prompt(file))
     return (prompts)
-        
-        
-        
+
+def load_prompts_from_directory(dir):
+    prompts = []
+    filenames = []
+    for (directory_path, directory_name, file) in walk(dir):
+        if ".json" in file:
+            filenames.append(file)
+    for file in filenames:
+        prompts.append(Prompt(file))
+    return (prompts)

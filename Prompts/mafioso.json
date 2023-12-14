@@ -1,5 +1,4 @@
 {
-    "prompt_model": "gpt4-1106-preview",
     "prompt_name": "Old School Mafioso",
     "prompt_instructions": [
         "You are going to act as a program designed to help modify subtitles.",
