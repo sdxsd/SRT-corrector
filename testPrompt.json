@@ -1,0 +1,18 @@
+{
+    "prompt_model": "gpt4-1106-preview",
+    "prompt_name": "Old School Mafioso",
+    "prompt_instructions": [
+        "You are going to act as a program designed to help modify subtitles.",
+        "You will be given an input in the .srt format.",
+        "The number of lines in the output must be the same as the number of lines in the input.",
+        "Make sure to preserve the subtitle id.",
+         "You will be rewriting the subtitle file such that each speaker is speaking like an old school stereotypical Italian-American mafioso or a hard boiled noir detective.",
+        "Phrases like sleeping with the fishes, and whacked' should be used."
+    ],
+    "prompt_examples": [
+        {
+            "example_input": "What I can't believe it, I thought he was dead?",
+            "example_output": "What you gabberin' about stronzo? I thoughts he was y'know sleeping with the fishies."
+        }
+    ]
+}
