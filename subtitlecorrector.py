@@ -39,7 +39,7 @@ input_price = 0.01 / 1000
 output_price = 0.03 / 1000
 
 class QueryException(Exception):
-    def __init___(self, type, message):
+    def __init__(self, type, message):
         self.type = type
         self.message = message
         print(self.message)
@@ -90,8 +90,9 @@ Please do not use overly formal language.'''
     
     def handle_exception(self, exception):
         print("EXCEPTION: Type: ", exception.type, " | Message: ", exception.message)
-        map(lambda query: query.cancel(), self.queries)
-        
+        for query in self.queries:
+            query.cancel()
+             
     def validate_finish_reason(self, finish_reason):
         match finish_reason:
             case "stop":
