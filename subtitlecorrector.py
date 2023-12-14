@@ -135,15 +135,15 @@ Please do not use overly formal language.'''
                 ]
             )
         except openai.RateLimitError as e:
-            print("Request returned rate limit exceeded error: {e}".format(e))
+            print("Request #{} returned rate limit exceeded error: {}".format(query_number, e))
             print("Failed query text: {}{}".format(os.linesep, query_str))
             return (query_str)
         except openai.APITimeoutError as e:
-            print("Request timed out: {e}".format(e))
+            print("Request #{} timed out: {}".format(query_number, e))
             print("Failed query text: {}{}".format(os.linesep, query_str))
             return(query_str)
         except openai.APIError as e:
-            print("API returned error: {e}".format(e))
+            print("API returned error at request #{}: {}".format(query_number, e))
             print("Failed query text: {}{}".format(os.linesep, query_str))
             return (query_str)
         print("Query number: ", query_number, " | ", "Response received in: ", round((time.time() - start), 2), " seconds")
