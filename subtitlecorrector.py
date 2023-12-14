@@ -113,6 +113,7 @@ Please do not use overly formal language.'''
     def estimate_total_queries(self, slist):
         return (math.ceil(self.num_tokens(''.join(map(lambda sub: str(sub.index) + os.linesep + sub.content + os.linesep, slist))) / self.tokens_per_query))
     
+    # Estimates the total cost in api usage.
     def calculate_cost(self):
         return (round((input_price * self.token_usage_input) + (output_price * self.token_usage_output), 2))
     
@@ -159,20 +160,21 @@ Please do not use overly formal language.'''
         return (srt.compose(slist))
     
     async def send_and_receive(self, query_str, token_count):
-        self.query_counter += 1
+        query_number = self.query_counter + 1
+        self.query_counter = query_number
         self.report_status(token_count)
         answer = await self.query_chatgpt(query_str, self.query_counter)
         while (self.count_subs(answer) != self.count_subs(query_str)):
             self.total_queries += 1
             self.query_counter += 1
-            print("Inconsistent output, resending query: ", token_count, " | Query count: ", self.query_counter)
-            answer = await self.query_chatgpt(query_str, self.query_counter)
+            print("Inconsistent output, resending query: ", token_count, " | Query count: ", query_number, "/", self.total_queries)
+            answer = await self.query_chatgpt(query_str, query_number)
         return answer
                    
     async def query_loop(self, subtitle_file):
         slist = list(srt.parse(open(subtitle_file, "r", encoding=encoding)))
         self.total_queries = self.estimate_total_queries(slist)
-        print("Parsed: ", subtitle_file, " | ", "Estimated number of queries: ", self.total_queries)
+        print("Parsed: ", subtitle_file)
         query_str = ""
         for sub in slist: 
             query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
@@ -181,6 +183,7 @@ Please do not use overly formal language.'''
                 self.queries.append(asyncio.create_task(self.send_and_receive(query_str, token_count)))
                 query_str = ""
         try:
+            self.total_queries = len(self.queries)
             responses = await asyncio.gather(*self.queries)
         except QueryException as e:
             self.handle_exception(e)
