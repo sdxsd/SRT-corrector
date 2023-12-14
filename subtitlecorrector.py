@@ -152,7 +152,7 @@ Please do not use overly formal language.'''
         try:
             self.validate_finish_reason(response.choices[0].finish_reason)
         except QueryException as e:
-            print("Query exception at query number: {1} | Exception type: {2} | exception message: {3}".format(query_number, e.type, e.message))
+            print("Query exception at query number: {1} | Message: {2}".format(query_number, e.message))
             print("Failed query text: {}{}".format(os.linesep, query_str))
             return (query_str)
         answer = response.choices[0].message.content
