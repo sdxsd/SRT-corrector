@@ -25,6 +25,7 @@
 
 # A program is free software if users have all of these freedoms.
 
+import openai
 from openai import AsyncOpenAI
 import asyncio
 import srt
@@ -125,17 +126,35 @@ Please do not use overly formal language.'''
     # Queries ChatGPT with the stripped SRT data.
     async def query_chatgpt(self, query_str, query_number):
         start = time.time()
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {'role': 'system', 'content': self.prompt_list[int(self.chosen_prompt)]},
-                {'role': 'user', 'content': query_str},
-            ]
-        )
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {'role': 'system', 'content': self.prompt_list[int(self.chosen_prompt)]},
+                    {'role': 'user', 'content': query_str},
+                ]
+            )
+        except openai.RateLimitError as e:
+            print("Request returned rate limit exceeded error: {e}".format(e))
+            print("Failed query text: {}{}".format(os.linesep, query_str))
+            return (query_str)
+        except openai.APITimeoutError as e:
+            print("Request timed out: {e}".format(e))
+            print("Failed query text: {}{}".format(os.linesep, query_str))
+            return(query_str)
+        except openai.APIError as e:
+            print("API returned error: {e}".format(e))
+            print("Failed query text: {}{}".format(os.linesep, query_str))
+            return (query_str)
         print("Query number: ", query_number, " | ", "Response received in: ", round((time.time() - start), 2), " seconds")
         self.token_usage_input += response.usage.prompt_tokens
         self.token_usage_output += response.usage.completion_tokens
-        self.validate_finish_reason(response.choices[0].finish_reason)
+        try:
+            self.validate_finish_reason(response.choices[0].finish_reason)
+        except QueryException as e:
+            print("Query exception at query number: {1} | Exception type: {2} | exception message: {3}".format(query_number, e.type, e.message))
+            print("Failed query text: {}{}".format(os.linesep, query_str))
+            return (query_str)
         answer = response.choices[0].message.content
         if (answer[-1] != os.linesep):
             answer += os.linesep
@@ -183,11 +202,8 @@ Please do not use overly formal language.'''
             if (token_count > self.tokens_per_query or (slist[-1].index == sub.index)):
                 self.queries.append(asyncio.create_task(self.send_and_receive(query_str, token_count)))
                 query_str = ""
-        try:
-            self.total_queries = len(self.queries)
-            responses = await asyncio.gather(*self.queries)
-        except QueryException as e:
-            self.handle_exception(e)
+        self.total_queries = len(self.queries)
+        responses = await asyncio.gather(*self.queries)
         print("Queries sent & responses received")
         print("Estimated cost: ", "€", self.calculate_cost())
         return (self.replace_sub_content(''.join(responses).splitlines(), slist))
