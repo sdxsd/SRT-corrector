@@ -46,5 +46,5 @@ def load_prompts_from_directory(dir):
     for (directory_path, directory_name, files) in walk(dir):
         for file in files: 
             if file.endswith(".json"):
-                filenames.append(directory_path + file)
+                filenames.append(directory_path + "\\" + file)
     return (load_prompts(filenames))

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import subtitlecorrector as stc
+from subtitlecorrector import Config
+import prompts as prompts
 import tkinter as tk
 from tkinter import *
 from tkinter import filedialog
@@ -12,7 +14,7 @@ class SRTCorrectorGui:
     def process_subtitle(self):
         if (self.full_output_path != "" and self.subtitle_file_path != ""):
             self.sfile_status_label.config(text="Processing started...")
-            stc.correct_subtitles(self.subtitle_file_path, self.full_output_path, self.prompts[self.selected_prompt.get()])
+            stc.correct_subtitles(self.subtitle_file_path, self.prompt_dict[self.selected_prompt.get()], self.full_output_path)
             self.sfile_status_label.config(text="Processing completed.")
         else:
             self.sfile_status_label.config(text="Please select the path to the input subtitle and the path for the output.")
@@ -97,12 +99,12 @@ class SRTCorrectorGui:
         self.subtitle_file_path = ""
         self.full_output_path = ""
         self.output_dir = ""
-        self.prompts = {
-            'Prompt: Subtitle Correction': 1,
-            'Prompt: Dutch to English': 2,
-            'Prompt: English to Dutch': 3
-        }
-
+        self.config = Config()
+        self.prompts = prompts.load_prompts_from_directory(self.config.prompt_directory)
+        self.prompt_dict = {}
+        for prompt in self.prompts:
+            self.prompt_dict.update({prompt.name: prompt})
+        
         # Window initialisation:
         self.root_window = tk.Tk()
         self.root_window.title = "Subtitle Corrector GUI"
@@ -111,7 +113,7 @@ class SRTCorrectorGui:
         # Prompt Selection:
         self.selected_prompt = StringVar(self.root_window)
         self.selected_prompt.set("Select prompt...")
-        self.prompt_select = OptionMenu(self.root_window, self.selected_prompt, *self.prompts, command=self.prompt_selected)
+        self.prompt_select = OptionMenu(self.root_window, self.selected_prompt, *self.prompt_dict, command=self.prompt_selected)
         self.prompt_select.pack()
 
         # General setup:

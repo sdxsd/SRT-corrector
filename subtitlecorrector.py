@@ -34,11 +34,24 @@ import tiktoken
 import math
 import time
 import prompts as prompts
+import json
 
 # Globals:
 encoding = "iso-8859-1" if os.name == "posix" else "utf-8"
 input_price = 0.01 / 1000
 output_price = 0.03 / 1000
+
+class Config():
+    def __init__(self):
+        try:
+            fp = open("config.json")
+            obj = json.loads(fp.read())
+            self.model = obj['model']
+            self.prompt_directory = obj['prompt_directory']
+            self.tokens_per_query = obj['tokens_per_query']
+        except OSError:
+            print("Could not open config. Please confirm that file exists and is openable.")
+            exit()
 
 class QueryException(Exception):
     def __init__(self, type, message):
@@ -49,11 +62,11 @@ class QueryException(Exception):
 
 class SubtitleCorrector:
     def __init__(self, chosen_prompt):
-        self.tokens_per_query = 150
-        self.model = "gpt-4-1106-preview"
+        config = Config()
+        self.tokens_per_query = config.tokens_per_query
+        self.model = config.model
         self.chosen_prompt = chosen_prompt
-        self.instructions = self.chosen_prompt.instructions
-        self.prompt_token_count = self.num_tokens(self.instructions)
+        self.prompt_token_count = self.num_tokens(self.chosen_prompt.instructions)
         self.query_counter = 0
         self.total_queries = 0
         self.queries = []
@@ -102,7 +115,7 @@ class SubtitleCorrector:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {'role': 'system', 'content': self.instructions},
+                    {'role': 'system', 'content': self.chosen_prompt.instructions},
                     {'role': 'user', 'content': query_str},
                 ]
             )
