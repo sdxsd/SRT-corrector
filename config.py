@@ -2,19 +2,19 @@ import os
 import platform
 import json
 
-default_config = '''{
+default_config = {
     "model": "gpt-4-1106-preview",
-    "prompt_directory": "$PD$",
+    "prompt_directory": "",
     "tokens_per_query": 150
-}'''
+}
 
 class Config():
     def __init__(self): 
         config_path, config_dir = self.determine_config_path() 
         if (not os.path.exists(config_path)):
             self.generate_default_config(config_path, config_dir)
-        fp = open(config_path)
-        obj = json.loads(fp.read())
+        with open(config_path) as f:     
+            obj = json.loads(f.read())
         self.model = obj['model']
         self.prompt_directory = obj['prompt_directory']
         self.tokens_per_query = obj['tokens_per_query']
@@ -26,9 +26,9 @@ class Config():
             if result in ['y', 'yes']:
                 if not os.path.exists(config_dir):
                     os.makedirs(config_dir)
-                fp = open(config_path, "w")
-                fp.write(default_config.replace('$PD$', os.path.join(config_dir, "prompts").replace("\\", "\\\\")))
-                fp.close()
+                with open(config_path, "w") as f:
+                    default_config["prompt_directory"] = os.path.join(config_dir, "prompts").replace("\\", "\\\\")
+                    f.write(json.dump(default_config))
                 break
             elif result in ['n', 'no']:
                 print("Cannot continue without config. Program exiting.")
@@ -40,11 +40,14 @@ class Config():
         if (platform.system() == "Linux"):
             config_dir = os.path.join(home, ".config", name)
             config_path = os.path.join(home, ".config", name, "config.json")
-        if (platform.system() == "Darwin"):
+        elif (platform.system() == "Darwin"):
             config_dir = os.path.join(home, "Library", "Application Support", name) 
             config_path = os.path.join(home, "Library", "Application Support", name, "config.json") 
-        if (platform.system() == "Windows"):
+        elif (platform.system() == "Windows"):
             config_dir = os.path.join(home, "AppData", "Local", name)
             config_path = os.path.join(home, "AppData", "Local", name, "config.json")
+        else:
+            print("Unsupported OS, exiting.")
+            exit()
         return (config_path, config_dir)
         

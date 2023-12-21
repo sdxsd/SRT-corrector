@@ -38,8 +38,28 @@ from config import Config
 
 # Globals:
 encoding = "iso-8859-1" if os.name == "posix" else "utf-8"
-input_price = 0.01 / 1000
-output_price = 0.03 / 1000
+API_prices = {
+    "gpt-4-1106-preview": {
+        "input_price": 0.01 / 1000,
+        "output_price": 0.03 / 1000
+    },
+    "gpt-4": {
+        "input_price": 0.03 / 1000,
+        "output_price": 0.06 / 1000
+    },
+    "gpt-4-32k": {
+        "input_price": 0.06 / 1000,
+        "output_price": 0.12 / 1000
+    },
+    "gpt-3.5-turbo-1106": {
+        "input_price": 0.0010 / 1000,
+        "output_price": 0.0020 / 1000
+    },
+    "gpt-3.5-turbo": {
+        "input_price": 0.0010 / 1000,
+        "output_price": 0.0020 / 1000
+    }
+}
 error_messages = {
     "length": "Query failed due to exceeding the token limit.",
     "content_filter": "Query failed due to violation of content policy"
@@ -56,14 +76,16 @@ class SubtitleCorrector:
     def __init__(self, chosen_prompt):
         config = Config()
         self.model = config.model
-        self.chosen_prompt = chosen_prompt
         self.tokens_per_query = config.tokens_per_query
+        self.chosen_prompt = chosen_prompt
         self.prompt_token_count = self.num_tokens(self.chosen_prompt.instructions)
         self.query_counter = 0
         self.total_queries = 0
         self.queries = []
         self.token_usage_input = 0
-        self.token_usage_output = 0
+        self.token_usage_output = 0        
+        self.input_price = API_prices[self.model]["input_price"]
+        self.output_price = API_prices[self.model]["output_price"]
         self.client = AsyncOpenAI()
     
     def handle_exception(self, exception):
@@ -89,7 +111,7 @@ class SubtitleCorrector:
     
     # Estimates the total cost in api usage.
     def calculate_cost(self):
-        return (round((input_price * self.token_usage_input) + (output_price * self.token_usage_output), 2))
+        return (round((self.input_price * self.token_usage_input) + (self.output_price * self.token_usage_output), 2))
     
     # Keeps the user informed.
     def report_status(self, token_count):
@@ -164,7 +186,8 @@ class SubtitleCorrector:
         return answer
                    
     async def query_loop(self, subtitle_file):
-        slist = list(srt.parse(open(subtitle_file, "r", encoding=encoding)))
+        with open(subtitle_file, "r", encoding=encoding) as f:
+            slist = list(srt.parse(f))
         self.total_queries = self.estimate_total_queries(slist)
         print("Parsed: ", subtitle_file)
         query_str = ""
@@ -184,5 +207,5 @@ class SubtitleCorrector:
 def correct_subtitles(subtitle_file, chosen_prompt, outputfile="output.srt"):
     subtitlecorrector = SubtitleCorrector(chosen_prompt)
     full_output = asyncio.run(subtitlecorrector.query_loop(subtitle_file))
-    ofile = open(outputfile, "w", encoding=encoding)
-    ofile.write(full_output)
+    with open(outputfile, "w", encoding=encoding) as ofile:
+        ofile.write(full_output)
