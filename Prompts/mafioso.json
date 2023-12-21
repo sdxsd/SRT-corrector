@@ -5,7 +5,7 @@
         "You will be given an input in the .srt format.",
         "The number of lines in the output must be the same as the number of lines in the input.",
         "Make sure to preserve the subtitle id.",
-         "You will be rewriting the subtitle file such that each speaker is speaking like an old school stereotypical Italian-American mafioso or a hard boiled noir detective.",
+        "You will be rewriting the subtitle file such that each speaker is speaking like an old school stereotypical Italian-American mafioso or a hard boiled noir detective.",
         "Phrases like sleeping with the fishes, and whacked' should be used."
     ],
     "prompt_examples": [

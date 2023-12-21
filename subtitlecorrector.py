@@ -34,13 +34,16 @@ import tiktoken
 import math
 import time
 import prompts as prompts
-import json
 from config import Config
 
 # Globals:
 encoding = "iso-8859-1" if os.name == "posix" else "utf-8"
 input_price = 0.01 / 1000
 output_price = 0.03 / 1000
+error_messages = {
+    "length": "Query failed due to exceeding the token limit.",
+    "content_filter": "Query failed due to violation of content policy"
+}
 
 class QueryException(Exception):
     def __init__(self, type, message):
@@ -52,9 +55,9 @@ class QueryException(Exception):
 class SubtitleCorrector:
     def __init__(self, chosen_prompt):
         config = Config()
-        self.tokens_per_query = config.tokens_per_query
         self.model = config.model
         self.chosen_prompt = chosen_prompt
+        self.tokens_per_query = config.tokens_per_query
         self.prompt_token_count = self.num_tokens(self.chosen_prompt.instructions)
         self.query_counter = 0
         self.total_queries = 0
@@ -69,13 +72,8 @@ class SubtitleCorrector:
             query.cancel()
              
     def validate_finish_reason(self, finish_reason):
-        match finish_reason:
-            case "stop":
-                return
-            case "length":
-                raise QueryException(finish_reason, "Query failed due to exceeding the token limit.")
-            case "content_filter":
-                raise QueryException(finish_reason, "Query failed due to violation of content policy")
+        if finish_reason != "stop":
+            raise QueryException(finish_reason, error_messages[finish_reason])
     
     # Counts the number of tokens in a given string.
     def num_tokens(self, raw_text):
