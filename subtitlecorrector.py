@@ -33,6 +33,7 @@ import os
 import tiktoken
 import math
 import time
+import prompts as prompts
 
 # Globals:
 encoding = "iso-8859-1" if os.name == "posix" else "utf-8"
@@ -47,41 +48,12 @@ class QueryException(Exception):
         super().__init__(message)
 
 class SubtitleCorrector:
-    def __init__(self, chosen_prompt=1):
-        self.prompt_list = {
-            1:
-'''You are going to act as a program designed to help correct subtitles. 
-You will be correcting automatically generated subtitles from a talk at a programming school.
-You will be given an input in the .srt format
-You will be doing the following: Please correct out of place words. Removing redundant and or filler words.
-Keep the content of the sentences consistent with the input. Your goal is correction not replacement.
-The number of lines in the output must be the same as the number of lines in the input.
-Make sure to preserve the subtitle id.
-Please do not use overly formal language.''',
-            2:
-'''You are going to act as a program designed to help translate subtitles.
-You will be translating automatically generated subtitles from Dutch to English.
-You will be given an input in the .srt format.
-You will be doing the following: Translating Dutch sentences into English. Correcting out of place words. Removing redundant and or filler words.
-Keep the content of the sentences consistent with the input.
-The number of lines in the output must be the same as the number of lines in the input.
-Make sure to preserve the subtitle id.
-Please do not use overly formal language.''',
-            3:
-'''You are going to act as a program designed to help translate subtitles.
-You will be translating automatically generated subtitles from English to Dutch.
-You will be given an input in the .srt format.
-You will be doing the following: Translating English sentences into Dutch. Correcting out of place words. Removing redundant and or filler words.
-Keep the content of the sentences consistent with the input.
-The number of lines in the output must be the same as the number of lines in the input.
-Make sure to preserve the subtitle id.
-Please do not use overly formal language.'''
-        }
-         
+    def __init__(self, chosen_prompt):
         self.tokens_per_query = 150
         self.model = "gpt-4-1106-preview"
         self.chosen_prompt = chosen_prompt
-        self.prompt_token_count = self.num_tokens(self.prompt_list[int(chosen_prompt)])
+        self.instructions = self.chosen_prompt.instructions
+        self.prompt_token_count = self.num_tokens(self.instructions)
         self.query_counter = 0
         self.total_queries = 0
         self.queries = []
@@ -130,7 +102,7 @@ Please do not use overly formal language.'''
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {'role': 'system', 'content': self.prompt_list[int(self.chosen_prompt)]},
+                    {'role': 'system', 'content': self.instructions},
                     {'role': 'user', 'content': query_str},
                 ]
             )
@@ -209,7 +181,7 @@ Please do not use overly formal language.'''
         return (self.replace_sub_content(''.join(responses).splitlines(), slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
-def correct_subtitles(subtitle_file, outputfile="output.srt", chosen_prompt=1):
+def correct_subtitles(subtitle_file, chosen_prompt, outputfile="output.srt"):
     subtitlecorrector = SubtitleCorrector(chosen_prompt)
     full_output = asyncio.run(subtitlecorrector.query_loop(subtitle_file))
     ofile = open(outputfile, "w", encoding=encoding)

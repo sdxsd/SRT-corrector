@@ -19,12 +19,12 @@ class PromptExample:
 class Prompt:
     def __init__(self, prompt):
         obj = json.loads(prompt)
-        self.prompt_name = obj["prompt_name"]
-        self.prompt_instructions = os.linesep.join(obj["prompt_instructions"])
-        self.prompt_examples = []
-        if (obj["prompt_examples"]):
+        self.name = obj["prompt_name"]
+        self.instructions = os.linesep.join(obj["prompt_instructions"])
+        self.examples = []
+        if "prompt_examples" in obj:
             for example in obj["prompt_examples"]:
-                self.prompt_examples.append(PromptExample(example))
+                self.examples.append(PromptExample(example))
 
 # Instantiates a single Prompt object from a file.
 def load_prompt(file):
@@ -40,12 +40,11 @@ def load_prompts(prompt_files):
         prompts.append(load_prompt(file))
     return (prompts)
 
+# Instantiates a number of prompts from a directory.
 def load_prompts_from_directory(dir):
-    prompts = []
     filenames = []
-    for (directory_path, directory_name, file) in walk(dir):
-        if ".json" in file:
-            filenames.append(file)
-    for file in filenames:
-        prompts.append(Prompt(file))
-    return (prompts)
+    for (directory_path, directory_name, files) in walk(dir):
+        for file in files: 
+            if file.endswith(".json"):
+                filenames.append(directory_path + file)
+    return (load_prompts(filenames))
