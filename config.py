@@ -17,22 +17,21 @@ class Config():
             obj = json.loads(f.read())
         self.model = obj['model']
         self.prompt_directory = obj['prompt_directory']
-        self.tokens_per_query = obj['tokens_per_query']
+        self.tokens_per_query = obj['tokens_per_query']    
             
     def generate_default_config(self, config_path, config_dir):
         print("No config file found. Do you want to generate and install a default config?")
-        while True:
-            result = input("Config file will be stored in: {}. Proceed? (y/n) ".format(config_path))
-            if result in ['y', 'yes']:
-                if not os.path.exists(config_dir):
-                    os.makedirs(config_dir)
-                with open(config_path, "w") as f:
-                    default_config["prompt_directory"] = os.path.join(config_dir, "prompts").replace("\\", "\\\\")
-                    f.write(json.dump(default_config))
-                break
-            elif result in ['n', 'no']:
-                print("Cannot continue without config. Program exiting.")
-                exit()
+        result = self.question("Config file will be stored in: {}. Proceed? (y/n) ".format(config_path))
+        if result == True:
+            if not os.path.exists(config_dir):
+                os.makedirs(config_dir)
+            with open(config_path, "w") as f:
+                default_config["prompt_directory"] = os.path.join(os.path.expanduser("~"), "prompts").replace("\\", "\\\\")
+                print("Your prompt directory will be located here: {}".format(default_config['prompt_directory']))
+                f.write(json.dump(default_config))
+        elif result == False:
+            print("Cannot continue without config. Program exiting.")
+            exit()
             
     def determine_config_path(self):
         name = "subtitle-corrector"
@@ -50,4 +49,12 @@ class Config():
             print("Unsupported OS, exiting.")
             exit()
         return (config_path, config_dir)
+    
+    def question(self, message):
+        while True:
+            result = input(message)
+            if result in ['y', 'yes']:
+                return (True)
+            elif result in ['n', 'no']:
+                return (False)
         
