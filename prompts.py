@@ -6,8 +6,8 @@ from os import walk
 # to OpenAI as examples for how ChatGPT should responded.
 class PromptExample:
     def __init__(self, prompt_example):
-        self.example_input =  {'role': 'example_user', 'content': prompt_example["example_input"] }
-        self.example_output = {'role': 'example_assistant', 'content': prompt_example["example_output"]}
+        self.example_input =  {'role': 'user', 'content': prompt_example["example_input"] }
+        self.example_output = {'role': 'assistant', 'content': prompt_example["example_output"]}
 
 # This is an object representation of a custom prompt.
 # The constructor takes a JSON encoded string and uses it to construct the Prompt.

@@ -1,0 +1,16 @@
+{
+    "prompt_name": "Redneck",
+    "prompt_instructions": [
+        "You are going to act as a program designed to help modify subtitles.",
+        "You will be given an input in the .srt format.",
+        "The number of lines in the output must be the same as the number of lines in the input.",
+        "Make sure to preserve the subtitle id.",
+        "You will be rewriting the subtitle file such that each speaker is speaking like in an exaggerated redneck manor. Think appalachian."
+    ],
+    "prompt_examples": [
+        {
+            "example_input": "What I can't believe it, I thought he was dead?",
+            "example_output": "What you yappin' about boy thought that son of a gun was dead?"
+        }
+    ]
+}

@@ -120,13 +120,17 @@ class SubtitleCorrector:
     # Queries ChatGPT with the stripped SRT data.
     async def query_chatgpt(self, query_str, query_number):
         start = time.time()
+        query_content = [
+            {'role': 'system', 'content': self.chosen_prompt.instructions},
+            {'role': 'user', 'content': query_str},
+        ]
+        for example in self.chosen_prompt.examples:
+            query_content.append(example.example_input)
+            query_content.append(example.example_output)
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {'role': 'system', 'content': self.chosen_prompt.instructions},
-                    {'role': 'user', 'content': query_str},
-                ]
+                messages=query_content
             )
         except openai.RateLimitError as e:
             print("Request #{} returned rate limit exceeded error: {}".format(query_number, e))
