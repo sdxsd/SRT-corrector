@@ -9,6 +9,9 @@ from tkinter import filedialog
 import platform
 import os
 
+# Note: This GUI code was hacked together in a day, Thusly it is incredibly messy. 
+#       If thou endeavourest to clean it up, then I hope that the spirit of programming walketh with thee. 
+
 class SRTCorrectorGui:
     # Process file.
     def process_subtitle(self):

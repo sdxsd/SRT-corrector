@@ -35,23 +35,12 @@ import math
 import time
 import prompts as prompts
 import json
+from config import Config
 
 # Globals:
 encoding = "iso-8859-1" if os.name == "posix" else "utf-8"
 input_price = 0.01 / 1000
 output_price = 0.03 / 1000
-
-class Config():
-    def __init__(self):
-        try:
-            fp = open("config.json")
-            obj = json.loads(fp.read())
-            self.model = obj['model']
-            self.prompt_directory = obj['prompt_directory']
-            self.tokens_per_query = obj['tokens_per_query']
-        except OSError:
-            print("Could not open config. Please confirm that file exists and is openable.")
-            exit()
 
 class QueryException(Exception):
     def __init__(self, type, message):
