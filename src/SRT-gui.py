@@ -64,7 +64,8 @@ class SRTCorrectorGui:
         self.sfile_path_label.pack(padx=10, side="left")
         self.path_entry.pack(padx=10, side="left")
         self.sfile_button.pack(padx=10, side="left")
-
+        
+    # Output file selection component.
     def ofile_selection_GUI(self):
         self.outputfile_frame = tk.Frame(master=self.root_window, width=100, height=100)
         self.ofile_label = tk.Label(master=self.outputfile_frame, text="Output folder:")

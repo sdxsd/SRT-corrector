@@ -38,6 +38,8 @@ from config import Config
 
 # Globals:
 encoding = "iso-8859-1" if os.name == "posix" else "utf-8"
+
+# Models and their different prices per token.
 API_prices = {
     "gpt-4-1106-preview": {
         "input_price": 0.01 / 1000,
@@ -60,6 +62,8 @@ API_prices = {
         "output_price": 0.0020 / 1000
     }
 }
+
+# To be expanded.
 error_messages = {
     "length": "Query failed due to exceeding the token limit.",
     "content_filter": "Query failed due to violation of content policy"
@@ -89,7 +93,7 @@ class SubtitleCorrector:
         self.client = AsyncOpenAI()
     
     def handle_exception(self, exception):
-        print("EXCEPTION: Type: ", exception.type, " | Message: ", exception.message)
+        print("EXCEPTION: Type: {1} | Message: {2} ".format(exception.type, exception.message))
         for query in self.queries:
             query.cancel()
              
@@ -144,7 +148,7 @@ class SubtitleCorrector:
             print("API returned error at request #{}: {}".format(query_number, e))
             print("Failed query text: {}{}".format(os.linesep, query_str))
             return (query_str)
-        print("Query number: ", query_number, " | ", "Response received in: ", round((time.time() - start), 2), " seconds")
+        print("Query number: {1} | Response received in: {2} seconds".format(query_number, round((time.time() - start), 2)))
         self.token_usage_input += response.usage.prompt_tokens
         self.token_usage_output += response.usage.completion_tokens
         try:
@@ -185,7 +189,7 @@ class SubtitleCorrector:
         while (self.count_subs(answer) != self.count_subs(query_str)):
             self.total_queries += 1
             self.query_counter += 1
-            print("Inconsistent output, resending query: ", token_count, " | Query count: ", query_number, "/", self.total_queries)
+            print("Inconsistent output, resending query with token count: {1} | Query count: {2}/{3}".format(token_count, query_number, self.total_queries))
             answer = await self.query_chatgpt(query_str, query_number)
         return answer
                    
@@ -193,7 +197,7 @@ class SubtitleCorrector:
         with open(subtitle_file, "r", encoding=encoding) as f:
             slist = list(srt.parse(f))
         self.total_queries = self.estimate_total_queries(slist)
-        print("Parsed: ", subtitle_file)
+        print("Parsed: {}".format(subtitle_file))
         query_str = ""
         for sub in slist: 
             query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
@@ -204,7 +208,7 @@ class SubtitleCorrector:
         self.total_queries = len(self.queries)
         responses = await asyncio.gather(*self.queries)
         print("Queries sent & responses received")
-        print("Estimated cost: ", "€", self.calculate_cost())
+        print("Estimated cost: €{}".format(self.calculate_cost()))
         return (self.replace_sub_content(''.join(responses).splitlines(), slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
