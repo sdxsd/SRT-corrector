@@ -150,6 +150,12 @@ class SubtitleCorrector:
                 return (exception.query_str)
             case 'API_connection':
                 return (exception.query_str)
+            case 'API_authentication':
+                return (exception.query_str)
+            case 'API_malformed_request':
+                return (exception.query_str)
+            case 'API_permission_denied':
+                return (exception.query_str)
              
     def validate_finish_reason(self, finish_reason, query_number):
         if finish_reason != "stop":
