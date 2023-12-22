@@ -66,14 +66,18 @@ API_prices = {
 # To be expanded.
 error_messages = {
     "length": "Query failed due to exceeding the token limit.",
-    "content_filter": "Query failed due to violation of content policy"
+    "content_filter": "Query failed due to violation of content policy.",
+    "API_error": "Query failed as API returned unknown error.",
+    "API_timeout_error": "Query failed due to timeout.",
+    "API_rate_limit_error": "Query failed due to number of requests exceeding the rate limit."
 }
 
 class QueryException(Exception):
-    def __init__(self, type, message):
+    def __init__(self, type, message, query_number, query_str):
         self.type = type
         self.message = message
-        print(self.message)
+        self.query_number = query_number
+        self.query_str = query_str
         super().__init__(message)
 
 class SubtitleCorrector:
@@ -93,7 +97,7 @@ class SubtitleCorrector:
         self.client = AsyncOpenAI()
     
     def handle_exception(self, exception):
-        print("EXCEPTION: Type: {1} | Message: {2} ".format(exception.type, exception.message))
+        print("EXCEPTION at query #{1}: Type: {2} | Message: {3} ".format(exception.query_number, exception.type, exception.message))
         for query in self.queries:
             query.cancel()
              
@@ -119,11 +123,10 @@ class SubtitleCorrector:
     
     # Keeps the user informed.
     def report_status(self, token_count):
-        print("Sending query with token count: ", (token_count + self.prompt_token_count), " | Query count: ", self.query_counter, "/", self.total_queries)
+        print("Sending query with token count: {1} | Query count: {2}/{3}".format((token_count + self.prompt_token_count), self.query_counter, self.total_queries))
     
     # Queries ChatGPT with the stripped SRT data.
     async def query_chatgpt(self, query_str, query_number):
-        start = time.time()
         query_content = [
             {'role': 'system', 'content': self.chosen_prompt.instructions},
             {'role': 'user', 'content': query_str},
@@ -131,28 +134,23 @@ class SubtitleCorrector:
         for example in self.chosen_prompt.examples:
             query_content.append(example.example_input)
             query_content.append(example.example_output)
+        start = time.time()
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=query_content
             )
         except openai.RateLimitError as e:
-            print("Request #{} returned rate limit exceeded error: {}".format(query_number, e))
-            print("Failed query text: {}{}".format(os.linesep, query_str))
-            return (query_str)
+            raise QueryException('API_rate_limit_error', error_messages['API_rate_limit_Error'], query_number, query_str)
         except openai.APITimeoutError as e:
-            print("Request #{} timed out: {}".format(query_number, e))
-            print("Failed query text: {}{}".format(os.linesep, query_str))
-            return (query_str)
+            raise QueryException('API_timeout_error', error_messages['API_timeout_Error'], query_number, query_str)
         except openai.APIError as e:
-            print("API returned error at request #{}: {}".format(query_number, e))
-            print("Failed query text: {}{}".format(os.linesep, query_str))
-            return (query_str)
+            raise QueryException('API_error', error_messages['API_Error'], query_number, query_str)
         print("Query number: {1} | Response received in: {2} seconds".format(query_number, round((time.time() - start), 2)))
         self.token_usage_input += response.usage.prompt_tokens
         self.token_usage_output += response.usage.completion_tokens
         try:
-            self.validate_finish_reason(response.choices[0].finish_reason)
+            self.validate_finish_reason(response.choices[0].finish_reason, query_number)
         except QueryException as e:
             print("Query exception at query number: {1} | Message: {2}".format(query_number, e.message))
             print("Failed query text: {}{}".format(os.linesep, query_str))
