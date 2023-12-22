@@ -208,9 +208,8 @@ class SubtitleCorrector:
                 i += 1
         return (srt.compose(slist))
     
-    async def send_and_receive(self, query_str, token_count):
-        query_number = self.query_counter + 1
-        self.query_counter = query_number
+    async def send_and_receive(self, query_str, token_count, query_number):
+        self.query_counter += 1
         self.report_status(token_count)
         if (self.query_delay > 0):
             await asyncio.sleep(self.query_delay) 
@@ -224,28 +223,36 @@ class SubtitleCorrector:
         except QueryException as e:
             return(self.handle_exception(e))
         return answer
-                   
-    async def query_loop(self, subtitle_file):
-        with open(subtitle_file, "r", encoding=encoding) as f:
-            slist = list(srt.parse(f))
-        self.total_queries = self.estimate_total_queries(slist)
-        print("Parsed: {}".format(subtitle_file))
-        query_str = ""
+   
+    # This function creates a list of queries (tasks)
+    # which will later be executed by asyncio.gather()
+    def prepare_queries(self, slist):
+        queries = []
+        idx = 0
         for sub in slist: 
-            query_str += (str(sub.index) + os.linesep + sub.content + os.linesep)
+            query_str += (os.linesep.join([str(sub.index), sub.content]) + os.linesep)
             token_count = self.num_tokens(query_str)
             if (token_count > self.tokens_per_query or (slist[-1].index == sub.index)):
-                self.queries.append(asyncio.create_task(self.send_and_receive(query_str, token_count)))
+                idx += 1
+                queries.append(asyncio.create_task(self.send_and_receive(query_str, token_count, idx)))
                 query_str = ""
+        return (queries)
+    
+    # raw subtitle data -> array of sub blocks -> array of tasks to be executed -> modified subtitle data -> ??? -> profit              
+    async def process_subs(self, subtitle_file):
+        with open(subtitle_file, "r", encoding=encoding) as f:
+            slist = list(srt.parse(f))
+        print("Parsed: {}".format(subtitle_file)) 
+        self.total_queries = self.estimate_total_queries(slist)
+        self.queries = self.prepare_queries(slist)
         self.total_queries = len(self.queries)
         responses = await asyncio.gather(*self.queries)
-        print("Queries sent & responses received")
-        print("Estimated cost: €{}".format(self.calculate_cost()))
+        print("All responses received. {} Estimated cost: €{}".format(os.linesep, self.calculate_cost()))
         return (self.replace_sub_content(''.join(responses).splitlines(), slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def correct_subtitles(subtitle_file, chosen_prompt, outputfile="output.srt"):
     subtitlecorrector = SubtitleCorrector(chosen_prompt)
-    full_output = asyncio.run(subtitlecorrector.query_loop(subtitle_file))
+    full_output = asyncio.run(subtitlecorrector.process_subs(subtitle_file))
     with open(outputfile, "w", encoding=encoding) as ofile:
         ofile.write(full_output)
