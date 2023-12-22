@@ -82,22 +82,20 @@ class QueryException(Exception):
 
 class SubtitleCorrector:
     def __init__(self, chosen_prompt):
+        self.client = AsyncOpenAI()
         config = Config()
         self.model = config.model
         self.tokens_per_query = config.tokens_per_query
         self.chosen_prompt = chosen_prompt
         self.prompt_token_count = self.num_tokens(self.chosen_prompt.instructions)
+        self.queries = []
         self.query_counter = 0
         self.total_queries = 0
-        self.queries = []
+        self.query_delay = 0
         self.token_usage_input = 0
         self.token_usage_output = 0
-        self.query_delay = 0
         self.timeouts_encountered = 0
         self.max_timeouts = 10        
-        self.input_price = API_prices[self.model]["input_price"]
-        self.output_price = API_prices[self.model]["output_price"]
-        self.client = AsyncOpenAI()
     
     async def handle_exception(self, exception):
         print("EXCEPTION at query #{1}: Type: {2} | Message: {3} ".format(exception.query_number, exception.type, exception.message))
@@ -150,7 +148,7 @@ class SubtitleCorrector:
     
     # Estimates the total cost in api usage.
     def calculate_cost(self):
-        return (round((self.input_price * self.token_usage_input) + (self.output_price * self.token_usage_output), 2))
+        return (round((API_prices[self.model] * self.token_usage_input) + (API_prices[self.model] * self.token_usage_output), 2))
     
     # Keeps the user informed.
     def report_status(self, token_count):
