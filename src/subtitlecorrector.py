@@ -127,6 +127,8 @@ class SubtitleCorrector:
                     for query in self.queries:
                         query.cancel()
             case 'API_rate_limit':
+                if (self.query_delay == 0):
+                    self.query_delay += 2
                 self.query_delay *= 2
                 return (self.query_chatgpt(exception.query_str, exception.query_number, self.chosen_prompt))
              
