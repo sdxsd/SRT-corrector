@@ -148,7 +148,7 @@ class SubtitleCorrector:
     
     # Estimates the total cost in api usage.
     def calculate_cost(self):
-        return (round((API_prices[self.model] * self.token_usage_input) + (API_prices[self.model] * self.token_usage_output), 2))
+        return (round((API_prices[self.model]["input_price"] * self.token_usage_input) + (API_prices[self.model]["output_price"] * self.token_usage_output), 2))
     
     # Keeps the user informed.
     def report_status(self, token_count):
