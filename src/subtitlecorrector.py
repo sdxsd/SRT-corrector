@@ -96,41 +96,51 @@ class SubtitleCorrector:
         self.token_usage_output = 0
         self.timeouts_encountered = 0
         self.max_timeouts = 10        
+  
+    async def handle_content_violation(self, exception):
+        result = ""
+        print(exception.query_str)
+        print("Explain how processing this text is not a content policy violation.") 
+        print("Your explanation will be appended to the prompt and the query will be resent.")
+        while (result == ""):
+            result = input("> ")
+        modified_prompt = self.chosen_prompt
+        modified_prompt.instructions += result
+        return (await self.query_chatgpt(exception.query_str, exception.query_number, modified_prompt))
     
-    async def handle_exception(self, exception):
+    async def handle_timeout(self, exception):
+        await asyncio.sleep(1)
+        self.timeouts_encountered += 1
+        if (self.timeouts_encountered < self.max_timeouts):
+            return (await self.query_chatgpt(exception.query_str, exception.query_number, self.chosen_prompt))
+        else:
+            print("Too many timeouts encountered, returning orignal input.")
+            return (exception.query_str)
+        
+    async def handle_ratelimit(self, exception):  
+        if (self.query_delay == 0):
+            self.query_delay += 2
+        self.query_delay *= 2
+        if (self.query_delay > 180):
+            print("Unable to get past rate limit, returning original input")
+            return (exception.query_str)
+        return (await self.query_chatgpt(exception.query_str, exception.query_number, self.chosen_prompt))
+    
+    async def handle_exceptions(self, exception):
         print("EXCEPTION at query #{1}: Type: {2} | Message: {3} ".format(exception.query_number, exception.type, exception.message))
         match exception.type:
-            case 'length': # TODO: Instead of returning original content send sub by sub.
+            case 'length': 
                 print("Returning original sub content.")
                 return (exception.query_str)
             case 'content_filter':
-                result = ""
-                print(exception.query_str)
-                print("Explain how processing this text is not a content policy violation.") 
-                print("Your explanation will be appended to the prompt and the query will be resent.")
-                while (result == ""):
-                    result = input("> ")
-                modified_prompt = self.chosen_prompt
-                modified_prompt.instructions += result
-                return (self.query_chatgpt(exception.query_str, exception.query_number, modified_prompt))
+                return (await self.handle_content_violation(exception))
             case 'API_error':
-                print("Unable to handle exception: {}, program will now exit.".format(exception.type)) 
-                for query in self.queries:
-                    query.cancel()
+                print("Unable to handle exception: {}, returning original input.".format(exception.type)) 
+                return (exception.query_str)
             case 'API_timeout':
-                await asyncio.sleep(1)
-                self.timeouts_encountered += 1
-                if (self.timeouts_encountered < self.max_timeouts):
-                    return (self.query_chatgpt(exception.query_str, exception.query_number, self.chosen_prompt))
-                else:
-                    print("Too many timeouts encountered, exiting.")
-                    for query in self.queries:
-                        query.cancel()
+                return (await self.handle_timeout(exception))
             case 'API_rate_limit':
-                if (self.query_delay == 0):
-                    self.query_delay += 2
-                self.query_delay *= 2
-                return (self.query_chatgpt(exception.query_str, exception.query_number, self.chosen_prompt))
+                return (await self.handle_ratelimit(exception))
              
     def validate_finish_reason(self, finish_reason, query_number):
         if finish_reason != "stop":
@@ -223,7 +233,7 @@ class SubtitleCorrector:
                 print("Inconsistent output, resending query with token count: {} | Query count: {}/{}".format(token_count, query_number, self.total_queries))
                 answer = await self.query_chatgpt(query_str, query_number, self.chosen_prompt)
         except QueryException as e:
-            return(await self.handle_exception(e))
+            return(await self.handle_exceptions(e))
         return answer
    
     # This function creates a list of queries (tasks)
