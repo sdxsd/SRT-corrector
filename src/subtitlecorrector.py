@@ -132,9 +132,9 @@ class SubtitleCorrector:
                 self.query_delay *= 2
                 return (self.query_chatgpt(exception.query_str, exception.query_number, self.chosen_prompt))
              
-    def validate_finish_reason(self, finish_reason):
+    def validate_finish_reason(self, finish_reason, query_number):
         if finish_reason != "stop":
-            raise QueryException(finish_reason, error_messages[finish_reason])
+            raise QueryException(finish_reason, query_number, error_messages[finish_reason])
     
     # Counts the number of tokens in a given string.
     def num_tokens(self, raw_text):
@@ -250,7 +250,7 @@ class SubtitleCorrector:
         self.queries = self.prepare_queries(slist)
         self.total_queries = len(self.queries)
         responses = await asyncio.gather(*self.queries)
-        print("All responses received. {} Estimated cost: €{}".format(os.linesep, self.calculate_cost()))
+        print("All responses received. {}Estimated cost: €{}".format(os.linesep, self.calculate_cost()))
         return (self.replace_sub_content(''.join(responses).splitlines(), slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
