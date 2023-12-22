@@ -68,8 +68,8 @@ error_messages = {
     "length": "Query failed due to exceeding the token limit.",
     "content_filter": "Query failed due to violation of content policy.",
     "API_error": "Query failed as API returned unknown error.",
-    "API_timeout_error": "Query failed due to timeout.",
-    "API_rate_limit_error": "Query failed due to number of requests exceeding the rate limit."
+    "API_timeout": "Query failed due to timeout.",
+    "API_rate_limit": "Query failed due to number of requests exceeding the rate limit."
 }
 
 class QueryException(Exception):
@@ -91,15 +91,46 @@ class SubtitleCorrector:
         self.total_queries = 0
         self.queries = []
         self.token_usage_input = 0
-        self.token_usage_output = 0        
+        self.token_usage_output = 0
+        self.query_delay = 0
+        self.timeouts_encountered = 0
+        self.max_timeouts = 10        
         self.input_price = API_prices[self.model]["input_price"]
         self.output_price = API_prices[self.model]["output_price"]
         self.client = AsyncOpenAI()
     
-    def handle_exception(self, exception):
+    async def handle_exception(self, exception):
         print("EXCEPTION at query #{1}: Type: {2} | Message: {3} ".format(exception.query_number, exception.type, exception.message))
-        for query in self.queries:
-            query.cancel()
+        match exception.type:
+            case 'length': # TODO: Instead of returning original content send sub by sub.
+                print("Returning original sub content.")
+                return (exception.query_str)
+            case 'content_filter':
+                result = ""
+                print(exception.query_str)
+                print("Explain how processing this text is not a content policy violation.") 
+                print("Your explanation will be appended to the prompt and the query will be resent.")
+                while (result == ""):
+                    result = input("> ")
+                modified_prompt = self.chosen_prompt
+                modified_prompt.instructions += result
+                return (self.query_chatgpt(exception.query_str, exception.query_number, modified_prompt))
+            case 'API_error':
+                print("Unable to handle exception: {}, program will now exit.".format(exception.type)) 
+                for query in self.queries:
+                    query.cancel()
+            case 'API_timeout':
+                await asyncio.sleep(1)
+                self.timeouts_encountered += 1
+                if (self.timeouts_encountered < self.max_timeouts):
+                    return (self.query_chatgpt(exception.query_str, exception.query_number, self.chosen_prompt))
+                else:
+                    print("Too many timeouts encountered, exiting.")
+                    for query in self.queries:
+                        query.cancel()
+            case 'API_rate_limit':
+                self.query_delay *= 2
+                return (self.query_chatgpt(exception.query_str, exception.query_number, self.chosen_prompt))
              
     def validate_finish_reason(self, finish_reason):
         if finish_reason != "stop":
@@ -126,12 +157,12 @@ class SubtitleCorrector:
         print("Sending query with token count: {1} | Query count: {2}/{3}".format((token_count + self.prompt_token_count), self.query_counter, self.total_queries))
     
     # Queries ChatGPT with the stripped SRT data.
-    async def query_chatgpt(self, query_str, query_number):
+    async def query_chatgpt(self, query_str, query_number, prompt):
         query_content = [
-            {'role': 'system', 'content': self.chosen_prompt.instructions},
+            {'role': 'system', 'content': prompt.instructions},
             {'role': 'user', 'content': query_str},
         ]
-        for example in self.chosen_prompt.examples:
+        for example in prompt.examples:
             query_content.append(example.example_input)
             query_content.append(example.example_output)
         start = time.time()
@@ -141,11 +172,11 @@ class SubtitleCorrector:
                 messages=query_content
             )
         except openai.RateLimitError as e:
-            raise QueryException('API_rate_limit_error', error_messages['API_rate_limit_Error'], query_number, query_str)
+            raise QueryException('API_rate_limit', error_messages['API_rate_limit'], query_number, query_str)
         except openai.APITimeoutError as e:
-            raise QueryException('API_timeout_error', error_messages['API_timeout_Error'], query_number, query_str)
+            raise QueryException('API_timeout', error_messages['API_timeout'], query_number, query_str)
         except openai.APIError as e:
-            raise QueryException('API_error', error_messages['API_Error'], query_number, query_str)
+            raise QueryException('API_error', error_messages['API_error'], query_number, query_str)
         print("Query number: {1} | Response received in: {2} seconds".format(query_number, round((time.time() - start), 2)))
         self.token_usage_input += response.usage.prompt_tokens
         self.token_usage_output += response.usage.completion_tokens
@@ -183,12 +214,17 @@ class SubtitleCorrector:
         query_number = self.query_counter + 1
         self.query_counter = query_number
         self.report_status(token_count)
-        answer = await self.query_chatgpt(query_str, self.query_counter)
-        while (self.count_subs(answer) != self.count_subs(query_str)):
-            self.total_queries += 1
-            self.query_counter += 1
-            print("Inconsistent output, resending query with token count: {1} | Query count: {2}/{3}".format(token_count, query_number, self.total_queries))
-            answer = await self.query_chatgpt(query_str, query_number)
+        if (self.query_delay > 0):
+            await asyncio.sleep(self.query_delay) 
+        try: 
+            answer = await self.query_chatgpt(query_str, self.query_counter, self.chosen_prompt)
+            while (self.count_subs(answer) != self.count_subs(query_str)):
+                self.total_queries += 1
+                self.query_counter += 1
+                print("Inconsistent output, resending query with token count: {1} | Query count: {2}/{3}".format(token_count, query_number, self.total_queries))
+                answer = await self.query_chatgpt(query_str, query_number, self.chosen_prompt)
+        except QueryException as e:
+            return(self.handle_exception(e))
         return answer
                    
     async def query_loop(self, subtitle_file):
