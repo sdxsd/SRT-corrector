@@ -154,7 +154,7 @@ class SubtitleCorrector:
     
     # Keeps the user informed.
     def report_status(self, token_count):
-        print("Sending query with token count: {1} | Query count: {2}/{3}".format((token_count + self.prompt_token_count), self.query_counter, self.total_queries))
+        print("Sending query with token count: {} | Query count: {}/{}".format((token_count + self.prompt_token_count), self.query_counter, self.total_queries))
     
     # Queries ChatGPT with the stripped SRT data.
     async def query_chatgpt(self, query_str, query_number, prompt):
@@ -177,13 +177,13 @@ class SubtitleCorrector:
             raise QueryException('API_timeout', error_messages['API_timeout'], query_number, query_str)
         except openai.APIError as e:
             raise QueryException('API_error', error_messages['API_error'], query_number, query_str)
-        print("Query number: {1} | Response received in: {2} seconds".format(query_number, round((time.time() - start), 2)))
+        print("Query number: {} | Response received in: {} seconds".format(query_number, round((time.time() - start), 2)))
         self.token_usage_input += response.usage.prompt_tokens
         self.token_usage_output += response.usage.completion_tokens
         try:
             self.validate_finish_reason(response.choices[0].finish_reason, query_number)
         except QueryException as e:
-            print("Query exception at query number: {1} | Message: {2}".format(query_number, e.message))
+            print("Query exception at query number: {} | Message: {}".format(query_number, e.message))
             print("Failed query text: {}{}".format(os.linesep, query_str))
             return (query_str)
         answer = response.choices[0].message.content
@@ -220,15 +220,16 @@ class SubtitleCorrector:
             while (self.count_subs(answer) != self.count_subs(query_str)):
                 self.total_queries += 1
                 self.query_counter += 1
-                print("Inconsistent output, resending query with token count: {1} | Query count: {2}/{3}".format(token_count, query_number, self.total_queries))
+                print("Inconsistent output, resending query with token count: {} | Query count: {}/{}".format(token_count, query_number, self.total_queries))
                 answer = await self.query_chatgpt(query_str, query_number, self.chosen_prompt)
         except QueryException as e:
-            return(self.handle_exception(e))
+            return(await self.handle_exception(e))
         return answer
    
     # This function creates a list of queries (tasks)
     # which will later be executed by asyncio.gather()
     def prepare_queries(self, slist):
+        query_str = ""
         queries = []
         idx = 0
         for sub in slist: 
