@@ -69,7 +69,12 @@ error_messages = {
     "content_filter": "Query failed due to violation of content policy.",
     "API_error": "Query failed as API returned unknown error.",
     "API_timeout": "Query failed due to timeout.",
-    "API_rate_limit": "Query failed due to number of requests exceeding the rate limit."
+    "API_rate_limit": "Query failed due to number of requests exceeding the rate limit.",
+    "API_connection": "Query failed due to connection error.",
+    "API_server_error": "Query failed due to internal server error",
+    "API_permission_denied": "Query failed due permission denied error.",
+    "API_authentication": "Query failed due to an authentication failure.",
+    "API_malformed_request": "Query failed as request was malformed."
 }
 
 class QueryException(Exception):
@@ -141,6 +146,10 @@ class SubtitleCorrector:
                 return (await self.handle_timeout(exception))
             case 'API_rate_limit':
                 return (await self.handle_ratelimit(exception))
+            case 'API_server_error':
+                return (exception.query_str)
+            case 'API_connection':
+                return (exception.query_str)
              
     def validate_finish_reason(self, finish_reason, query_number):
         if finish_reason != "stop":
@@ -185,6 +194,16 @@ class SubtitleCorrector:
             raise QueryException('API_rate_limit', error_messages['API_rate_limit'], query_number, query_str)
         except openai.APITimeoutError as e:
             raise QueryException('API_timeout', error_messages['API_timeout'], query_number, query_str)
+        except openai.APIConnectionError as e:
+            raise QueryException('API_connection', error_messages['API_connection'], query_number, query_str)
+        except openai.InternalServerError as e:
+            raise QueryException('API_server_error', error_messages['API_server_error'], query_number, query_str) 
+        except openai.AuthenticationError as e:
+            raise QueryException('API_authentication', error_messages['API_authentication'], query_number, query_str)
+        except openai.BadRequestError as e:
+            raise QueryException('API_malformed_request', error_messages['API_malformed_request'], query_number, query_str)
+        except openai.PermissionDeniedError as e:
+            raise QueryException('API_permission_denied', error_messages['API_permission_denied'], query_number, query_str)
         except openai.APIError as e:
             raise QueryException('API_error', error_messages['API_error'], query_number, query_str)
         print("Query number: {} | Response received in: {} seconds".format(query_number, round((time.time() - start), 2)))
