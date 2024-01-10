@@ -9,7 +9,7 @@ import json
 default_config = {
     "model": "gpt-4-1106-preview",
     "prompt_directory": "",
-    "tokens_per_query": 150
+    "tokens_per_query": 300
 }
 
 # Rudimentary config class.
