@@ -35,9 +35,6 @@ import prompts as prompts
 from config import Config
 from query import Query
 
-# Globals:
-encoding = "iso-8859-1" if os.name == "posix" else "utf-8"
-
 # Models and their different prices per token.
 API_prices = {
     "gpt-4-1106-preview": {
@@ -72,19 +69,19 @@ class SubtitleCorrector:
         self.prompt_token_count = self.num_tokens(self.chosen_prompt.instructions)
         self.queries = []
         self.query_tasks = []
-        self.total_queries = 0        
              
     # Counts the number of tokens in a given string.
     def num_tokens(self, raw_text):
         return (len(tiktoken.get_encoding("cl100k_base").encode(raw_text)))
 
-    # Estimates the total queries required for the file using token counts.
-    def estimate_total_queries(self, slist):
-        return (math.ceil(self.num_tokens(''.join(map(lambda sub: str(sub.index) + os.linesep + sub.content + os.linesep, slist))) / self.tokens_per_query))
-    
     # Estimates the total cost in api usage.
     def calculate_cost(self):
-        return (round((API_prices[self.model]["input_price"] * self.token_usage_input) + (API_prices[self.model]["output_price"] * self.token_usage_output), 2))
+        input_usage = 0
+        output_usage = 0
+        for query in self.queries:
+            input_usage += query.token_usage_input
+            output_usage += query.token_usage_output
+        return (round((API_prices[self.model]["input_price"] * input_usage) + (API_prices[self.model]["output_price"] * output_usage), 2))
         
     # Replaces the "content" variable of the original subtitle block list
     # using the sum of the responses from GPT.
@@ -104,10 +101,6 @@ class SubtitleCorrector:
                     sub.content += ((" " if sub.content else "") + (rawlines[i] if rawlines[i].rstrip() != "" else ""))
                 i += 1
         return (srt.compose(slist))
-    
-    async def send_and_receive(self, query):
-        answer = query.run()
-        return answer
    
     # This function creates a list of queries (tasks)
     # which will later be executed by asyncio.gather()
@@ -127,19 +120,17 @@ class SubtitleCorrector:
     
     # raw subtitle data -> array of sub blocks -> array of tasks to be executed -> modified subtitle data -> ??? -> profit              
     async def process_subs(self, subtitle_file):
-        with open(subtitle_file, "r", encoding=encoding) as f:
+        with open(subtitle_file, "r") as f:
             slist = list(srt.parse(f))
         print("Parsed: {}".format(subtitle_file)) 
-        self.total_queries = self.estimate_total_queries(slist)
         self.queries = self.prepare_queries(slist)
-        self.total_queries = len(self.queries)
         responses = await asyncio.gather(*self.queries)
-        print("All responses received. {}Estimated cost: €{}".format(os.linesep, self.calculate_cost()))
+        print("All responses received.{}Estimated cost: €{}".format(os.linesep, self.calculate_cost()))
         return (self.replace_sub_content(''.join(responses).splitlines(), slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def correct_subtitles(subtitle_file, chosen_prompt, outputfile="output.srt"):
     subtitlecorrector = SubtitleCorrector(chosen_prompt)
     full_output = asyncio.run(subtitlecorrector.process_subs(subtitle_file))
-    with open(outputfile, "w", encoding=encoding) as ofile:
+    with open(outputfile, "w") as ofile:
         ofile.write(full_output)
