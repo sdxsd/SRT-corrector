@@ -30,10 +30,9 @@ import asyncio
 import srt
 import os
 import tiktoken
-import math
 import prompts as prompts
 from config import Config
-from query import Query
+from query import Query, QueryContent, QueryException
 
 # Models and their different prices per token.
 API_prices = {
@@ -60,15 +59,14 @@ API_prices = {
 }
 
 class SubtitleCorrector:
-    def __init__(self, chosen_prompt):
+    def __init__(self, prompt):
         self.client = AsyncOpenAI()
         self.config = Config()
         self.model = self.config.model
         self.tokens_per_query = self.config.tokens_per_query
-        self.chosen_prompt = chosen_prompt
-        self.prompt_token_count = self.num_tokens(self.chosen_prompt.instructions)
+        self.prompt = prompt
+        self.prompt_token_count = self.num_tokens(self.prompt.instructions)
         self.queries = []
-        self.query_tasks = []
              
     # Counts the number of tokens in a given string.
     def num_tokens(self, raw_text):
@@ -112,25 +110,37 @@ class SubtitleCorrector:
             query_str += (os.linesep.join([str(sub.index), sub.content]) + os.linesep)
             token_count = self.num_tokens(query_str)
             if (token_count > self.tokens_per_query or (slist[-1].index == sub.index)):
-                self.queries.append(Query(idx, self.chosen_prompt, query_str, token_count + self.prompt_token_count, self.client, self.config))
+                query_content = QueryContent(self.prompt, query_str, self.config, token_count + self.prompt_token_count)
+                self.queries.append(Query(idx, self.client, query_content))
                 query_tasks.append(asyncio.create_task(self.queries[idx].run()))
                 query_str = ""
                 idx += 1
         return (query_tasks)
-    
+   
+    def reassemble_queries(self, queries, failed_queries):
+        result = resend_failed_queries(failed_queries)
+        reassembled_output = ""
+        for query in queries:
+            reassembled_output += query.response
+            
     # raw subtitle data -> array of sub blocks -> array of tasks to be executed -> modified subtitle data -> ??? -> profit              
     async def process_subs(self, subtitle_file):
-        with open(subtitle_file, "r") as f:
+        failed_queries = []
+        with open(subtitle_file, encoding="utf-8") as f:
             slist = list(srt.parse(f))
         print("Parsed: {}".format(subtitle_file)) 
-        self.queries = self.prepare_queries(slist)
-        responses = await asyncio.gather(*self.queries)
+        query_tasks = self.prepare_queries(slist)
+        try:
+            await asyncio.gather(*query_tasks)
+        except QueryException as e:
+            failed_queries.append(e)
+        self.reassemble_queries(self.queries, failed_queries)
         print("All responses received.{}Estimated cost: €{}".format(os.linesep, self.calculate_cost()))
         return (self.replace_sub_content(''.join(responses).splitlines(), slist))
     
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
-def correct_subtitles(subtitle_file, chosen_prompt, outputfile="output.srt"):
-    subtitlecorrector = SubtitleCorrector(chosen_prompt)
+def correct_subtitles(subtitle_file, prompt, outputfile="output.srt"):
+    subtitlecorrector = SubtitleCorrector(prompt)
     full_output = asyncio.run(subtitlecorrector.process_subs(subtitle_file))
     with open(outputfile, "w") as ofile:
         ofile.write(full_output)
