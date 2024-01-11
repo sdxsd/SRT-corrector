@@ -96,9 +96,10 @@ class SubtitleCorrector:
             await asyncio.gather(*query_tasks)
         except QueryException as e:
             failed_queries.append(e)
-        exceptions.handle_failed_queries(self.failed_queries)
+        await exceptions.resend_failed_queries(failed_queries)
         responses = self.assemble_queries()
-        print(f"All responses received.{os.linesep}Estimated cost: €{self.calculate_cost()}")
+        print("All responses received.")
+        print(f"Estimated cost: €{utils.calculate_cost(self.queries, self.config.model)}")
         return (self.replace_sub_content(''.join(responses).splitlines(), slist))
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.

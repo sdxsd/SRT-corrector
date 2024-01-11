@@ -1,4 +1,6 @@
 import openai
+import asyncio
+from query import QueryException
 
 # Handleable errors
 Errors = {
@@ -8,9 +10,23 @@ Errors = {
     "ERR_generic": "Request failed due to error",
 }
 
+async def resend_failed_queries(failed_queries):
+    tasks = []
+    while (failed_queries):
+        tasks.clear()
+        await handle_failed_queries(failed_queries)
+        for failed_query in failed_queries:
+            tasks.append(asyncio.create_task(failed_query.query.run()))
+        failed_queries.clear()
+        print (f"Resending {len(tasks)} failed queries...")
+        try:
+            await asyncio.gather(*tasks)
+        except QueryException as e:
+            failed_queries.append(e)
+
 async def handle_failed_queries(query_exceptions):
     for exception in query_exceptions:
-        print(f"#{exception.query.index}: {exception.error_type}")
+        print(f"#{exception.query.idx}: {exception.error_type}")
         if (exception.error_type == openai.APITimeoutError.__name__):
             handle_timeout(exception.query)
         elif (exception.error_type == openai.RateLimitError.__name__):

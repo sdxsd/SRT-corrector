@@ -88,7 +88,8 @@ class Query:
     async def run(self):
         self.report_status()
         if (self.should_run is False):
-            return (self.content.query_text)
+            self.response = self.content.query_text
+            return
         answer = await self.query_chatgpt()
         while (utils.count_subs(answer) != utils.count_subs(self.content.query_text)):
             print(f"Inconsistent output, resending: {self.idx}")
