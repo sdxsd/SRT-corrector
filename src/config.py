@@ -27,13 +27,13 @@ class Config():
     # If a config is not found, this function will be called and prompt the user to generate and install one.     
     def generate_default_config(self, config_path, config_dir):
         print("No config file found. Do you want to generate and install a default config?")
-        result = self.question("Config file will be stored in: {}. Proceed? (y/n) ".format(config_path))
+        result = self.question(f"Config file will be stored in: {config_path}. Proceed? (y/n) ")
         if result == True:
             if not os.path.exists(config_dir):
                 os.makedirs(config_dir)
             with open(config_path, "w") as f:
                 default_config["prompt_directory"] = os.path.join(os.path.expanduser("~"), "prompts").replace("\\", "\\\\")
-                print("Your prompt directory will be located here: {}".format(default_config['prompt_directory']))
+                print(f"Your prompt directory will be located here: {default_config['prompt_directory']}")
                 f.write(json.dump(default_config))
         elif result == False:
             print("Cannot continue without config. Program exiting.")
@@ -65,4 +65,3 @@ class Config():
                 return (True)
             elif result in ['n', 'no']:
                 return (False)
-        

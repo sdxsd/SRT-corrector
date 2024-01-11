@@ -25,6 +25,7 @@
 
 # A program is free software if users have all of these freedoms.
 
+from openai import AsyncOpenAI
 import asyncio
 import os
 import exceptions
@@ -37,6 +38,7 @@ from query import Query, QueryException
 
 class SubtitleCorrector:
     def __init__(self, chosen_prompt):
+        self.client = AsyncOpenAI()
         self.config = Config()
         self.chosen_prompt = chosen_prompt
         self.queries = []
@@ -73,6 +75,7 @@ class SubtitleCorrector:
             if (token_count > self.config.tokens_per_query or (slist[-1].index == sub.index)):
                 self.queries.append(Query(
                     idx,
+                    self.client,
                     self.chosen_prompt,
                     query_text,
                     token_count,

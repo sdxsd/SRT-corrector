@@ -26,6 +26,10 @@ API_prices = {
     }
 }
 
+# I <3 one line functions.
+def count_subs(subs):
+    return (sum(map(lambda sub: sub.rstrip().isdigit() is True, subs.splitlines())))
+
 # Counts the number of tokens in a given string.
 def num_tokens(raw_text):
     return (len(tiktoken.get_encoding("cl100k_base").encode(raw_text)))

@@ -1,8 +1,8 @@
 import openai
-from openai import AsyncOpenAI
 import os
 import time
 from typing import Optional
+import utils
 
 class QueryException(Exception):
     def __init__(self, query, error: Optional[openai.APIError], finish_reason="") -> None:
@@ -21,7 +21,7 @@ class QueryContent:
         for example in self.prompt.examples:
             self.content.append(example.example_input)
             self.content.append(example.example_output)
-        self.token_count = token_count
+        self.token_count = token_count + utils.num_tokens(prompt)
  
 class Query:
     def __init__(self, idx, client, content):
@@ -41,15 +41,11 @@ class Query:
     # Keeps the user informed.
     def report_status(self):
         print("Sending query with token count: {} | Query index: {}".format(self.content.token_count, self.idx))
-    
-    # I <3 one line functions.
-    def count_subs(self, subs):
-        return (sum(map(lambda sub: sub.rstrip().isdigit() == True, subs.splitlines())))
-    
+
     async def run(self):
         self.report_status()
         answer = await self.query_chatgpt()
-        while (self.count_subs(answer) != self.count_subs(self.content.query_text)):
+        while (utils.count_subs(answer) != utils.count_subs(self.content.query_text)):
             print("Inconsistent output, resending: {}".format(self.idx))
             answer = await self.query_chatgpt()
         self.response = answer
