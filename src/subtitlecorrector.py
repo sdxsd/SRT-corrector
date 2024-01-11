@@ -87,16 +87,13 @@ class SubtitleCorrector:
 
     # raw subtitle data -> array of sub blocks -> array of tasks to be executed -> modified subtitle data -> ??? -> profit
     async def process_subs(self, subtitle_file):
-        failed_queries = []
         with open(subtitle_file, encoding="utf-8") as f:
             slist = list(srt.parse(f))
         print(f"Parsed: {subtitle_file}")
         query_tasks = self.prepare_queries(slist)
-        try:
-            await asyncio.gather(*query_tasks)
-        except QueryException as e:
-            failed_queries.append(e)
-        await exceptions.resend_failed_queries(failed_queries)
+        failed_queries = await asyncio.gather(*query_tasks, return_exceptions=True)
+        if (failed_queries):
+            await exceptions.resend_failed_queries(failed_queries)
         responses = self.assemble_queries()
         print("All responses received.")
         print(f"Estimated cost: €{utils.calculate_cost(self.queries, self.config.model)}")
