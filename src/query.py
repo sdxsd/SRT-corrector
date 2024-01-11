@@ -31,7 +31,11 @@ import utils
 class QueryException(Exception):
     def __init__(self, query, error_type) -> None:
         self.query: Query = query
-        self.error_type: str = error_type
+        if (error_type == "content_filter"):
+            self.error_type = error_type
+        else:
+            self.error_type = "ERR_generic"
+
 
 class QueryContent:
     def __init__(self, prompt, query_text, config, token_count):
