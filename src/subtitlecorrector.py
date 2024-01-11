@@ -26,12 +26,14 @@
 # A program is free software if users have all of these freedoms.
 
 import asyncio
-import srt
 import os
+import exceptions
 import prompts as prompts
+import srt
 import utils
 from config import Config
 from query import Query, QueryException
+
 
 class SubtitleCorrector:
     def __init__(self, chosen_prompt):
@@ -48,8 +50,8 @@ class SubtitleCorrector:
             sub.content = ""
             digit_encountered = False
             while (i < len(rawlines)):
-                if (rawlines[i].rstrip().isdigit() == True):
-                    if (digit_encountered == True):
+                if (rawlines[i].rstrip().isdigit() is True):
+                    if (digit_encountered is True):
                         digit_encountered = False
                         break
                     else:
@@ -58,14 +60,14 @@ class SubtitleCorrector:
                     sub.content += ((" " if sub.content else "") + (rawlines[i] if rawlines[i].rstrip() != "" else ""))
                 i += 1
         return (srt.compose(slist))
-   
+
     # This function creates a list of queries (tasks)
     # which will later be executed by asyncio.gather()
     def prepare_queries(self, slist):
         query_text = ""
         query_tasks = []
         idx = 0
-        for sub in slist: 
+        for sub in slist:
             query_text += (os.linesep.join([str(sub.index), sub.content]) + os.linesep)
             token_count = utils.num_tokens(query_text)
             if (token_count > self.config.tokens_per_query or (slist[-1].index == sub.index)):
@@ -80,23 +82,32 @@ class SubtitleCorrector:
                 query_text = ""
                 idx += 1
         return (query_tasks)
-    
-    # raw subtitle data -> array of sub blocks -> array of tasks to be executed -> modified subtitle data -> ??? -> profit              
+
+    def assemble_queries(self):
+        responses = ""
+        for query in self.queries:
+            responses += query.response
+        return (responses)
+
+    # raw subtitle data -> array of sub blocks -> array of tasks to be executed -> modified subtitle data -> ??? -> profit
     async def process_subs(self, subtitle_file):
-        with open(subtitle_file, "r") as f:
+        failed_queries = []
+        with open(subtitle_file, encoding="utf-8") as f:
             slist = list(srt.parse(f))
-        print("Parsed: {}".format(subtitle_file)) 
-        self.queries = self.prepare_queries(slist)
+        print("Parsed: {}".format(subtitle_file))
+        query_tasks = self.prepare_queries(slist)
         try:
-            responses = await asyncio.gather(*self.queries)
+            await asyncio.gather(*query_tasks)
         except QueryException as e:
-            self.failed_queries.append(e)
-        print("All responses received.{}Estimated cost: €{}".format(os.linesep, utils.calculate_cost()))
+            failed_queries.append(e)
+        exceptions.handle_failed_queries(self.failed_queries)
+        responses = self.assemble_queries()
+        print("All responses received.{}Estimated cost: €{}".format(os.linesep, self.calculate_cost()))
         return (self.replace_sub_content(''.join(responses).splitlines(), slist))
-    
+
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
-def correct_subtitles(subtitle_file, chosen_prompt, outputfile="output.srt"):
-    subtitlecorrector = SubtitleCorrector(chosen_prompt)
+def correct_subtitles(subtitle_file, prompt, outputfile="output.srt"):
+    subtitlecorrector = SubtitleCorrector(prompt)
     full_output = asyncio.run(subtitlecorrector.process_subs(subtitle_file))
     with open(outputfile, "w") as ofile:
         ofile.write(full_output)
