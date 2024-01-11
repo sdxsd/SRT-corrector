@@ -29,12 +29,9 @@ import time
 import utils
 
 class QueryException(Exception):
-    def __init__(self, query, error_type) -> None:
+    def __init__(self, query, error_type):
         self.query: Query = query
-        if (error_type == "content_filter"):
-            self.error_type = error_type
-        else:
-            self.error_type = "ERR_generic"
+        self.error_type = error_type
 
 class QueryContent:
     def __init__(self, prompt, query_text, config, token_count):
@@ -75,7 +72,7 @@ class Query:
         
     # Keeps the user informed.
     def report_status(self):
-        print(f"Sending query with token count: {self.content.token_count} | Query index: {self.idx}")
+        print(f"Sending query: {self.idx} | Token count: {self.content.token_count}")
 
     # This function is a wrapper over query_chatgpt()
     # It runs query_chatgpt() and checks if the response
@@ -86,10 +83,11 @@ class Query:
     # text should be returned rather than carelessly wasting API usage
     # by resending the query.
     async def run(self):
-        self.report_status()
         if (self.should_run is False):
+            print(f"Query: {self.idx} failed unrecoverably.")
             self.response = self.content.query_text
             return
+        self.report_status()
         answer = await self.query_chatgpt()
         while (utils.count_subs(answer) != utils.count_subs(self.content.query_text)):
             print(f"Inconsistent output, resending: {self.idx}")
@@ -117,7 +115,7 @@ class Query:
         self.token_usage_output += response.usage.completion_tokens
         if (response.choices[0].finish_reason != "stop"):
             raise QueryException(self, response.choices[0].finish_reason)
-        print(f"Query index: {self.idx} | Response received in: {round((time.time() - start), 2)} seconds")
+        print(f"Query: {self.idx} | Response received in: {round((time.time() - start), 2)} seconds")
         answer = response.choices[0].message.content
         if (answer[-1] != os.linesep):
             answer += os.linesep

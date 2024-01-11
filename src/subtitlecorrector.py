@@ -80,9 +80,16 @@ class SubtitleCorrector:
         return (query_tasks)
 
     def assemble_queries(self):
+        failed_queries = 0
+        successful_queries = 0
         responses = ""
         for query in self.queries:
+            if (query.should_run is False):
+                failed_queries += 1
+            else:
+                successful_queries += 1
             responses += query.response
+        print(f"({successful_queries}) Successful | ({failed_queries}) Failed")
         return (responses)
 
     # raw subtitle data -> array of sub blocks -> array of tasks to be executed -> modified subtitle data -> ??? -> profit
@@ -95,7 +102,7 @@ class SubtitleCorrector:
         if (failed_queries):
             await exceptions.resend_failed_queries(failed_queries)
         responses = self.assemble_queries()
-        print("All responses received.")
+        print("All queries resolved.")
         print(f"Estimated cost: €{utils.calculate_cost(self.queries, self.config.model)}")
         return (self.replace_sub_content(''.join(responses).splitlines(), slist))
 

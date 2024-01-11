@@ -4,10 +4,12 @@ from query import QueryException
 
 # Handleable errors
 Errors = {
-    openai.APITimeoutError.__name__: "Request timed out.",
-    openai.RateLimitError.__name__: "Request was rate limited.",
+    openai.APITimeoutError.__name__: "Query timed out.",
+    openai.RateLimitError.__name__: "Query was rate limited.",
+    openai.APIConnectionError.__name__: "Query failed due to connection error.",
+    openai.BadRequestError.__name__: "Query failed due to request being bad.",
     "content_filter": "Response stopped due to content violation.",
-    "ERR_generic": "Request failed due to error",
+    "ERR_generic": "Query failed due to error",
 }
 
 async def resend_failed_queries(failed_queries):
@@ -18,15 +20,11 @@ async def resend_failed_queries(failed_queries):
         for failed_query in failed_queries:
             tasks.append(asyncio.create_task(failed_query.query.run()))
         failed_queries.clear()
-        print (f"Resending {len(tasks)} failed queries...")
-        try:
-            await asyncio.gather(*tasks)
-        except QueryException as e:
-            failed_queries.append(e)
+        failed_queries = await asyncio.gather(*tasks, return_exceptions=True)
 
 async def handle_failed_queries(query_exceptions):
     for exception in query_exceptions:
-        print(f"#{exception.query.idx}: {exception.error_type}")
+        print(f"Query: {exception.query.idx} | {Errors[exception.error_type]}")
         if (exception.error_type == openai.APITimeoutError.__name__):
             handle_timeout(exception.query)
         elif (exception.error_type == openai.RateLimitError.__name__):
@@ -49,14 +47,14 @@ def handle_timeout(query):
     query.timeouts_encountered += 1
     query.delay += 5
     if (query.timeouts_encountered > query.max_timeouts):
-        print("Too many timeouts encountered, returning orignal input.")
+        print(f"Query: {query.idx} | Too many timeouts.")
         query.should_run = False
     else:
         query.should_run = True
 
 def handle_ratelimit(query):
     if (query.query_delay > 256):
-        print("Unable to get past rate limit, returning original input")
+        print(f"Query: {query.idx} | Unable to overcome rate limit.")
         query.should_run = False
     if (query.query_delay == 0):
         query.query_delay = 30
