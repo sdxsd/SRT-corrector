@@ -2,25 +2,52 @@ import openai
 import asyncio
 from query import QueryException
 
-# Handleable errors
+# General structure of error handling:
+# resend_failed_queries(failed_queries) takes a list
+# of QueryExceptions objects, each QueryException contains a Query object.
+# A loop is entered that continues until the failed_queries list is empty of QueryExceptions.
+# handle_failed_queries is called and modifies each Query according to the error_type of the QueryException.
+# Queries are modified such that they have a chance of succeeding the next time they are run().
+# For example, in the case of encountering a rate limit, a delay is added so the request sleeps
+# before querying the OpenAI API thus hopefully allowing enough time to pass for the rate limit to expire.
+# After handle_failed_queries returns, for every Query a asyncio task object is created
+# which will later be run by asyncio.gather().
+# The list of query.run() tasks is then executed asynchronously by asyncio.gather() with the flag
+# return_exceptions equalling True.
+# In the case that return_exceptions is True, asyncio.gather() will return each exception within
+# the array that it returns. In this case, since a successful Query does not return any value; the contents
+# of the list will only ever be QueryExceptions, hence we can consider
+# the result of asyncio.gather() as a list of the queries that have once again failed thus
+# allowing us to repeat the process of resending them.
+# In the case that handle_failed_queries() detects that a given Query will likely not succeed when resent
+# it will set a flag within the Query object such that upon the next run() the object will return the original
+# chunk of subtitle data it was initialised with. This will count as a "successful" query and thus
+# will not appear in the results of asyncio.gather().
+# Because of this, the loop within resend_failed_queries() will continue until all the queries
+# have been resolved (either failed unrecoverably) or returned successful output from the API.
+
 Errors = {
     openai.APITimeoutError.__name__: "Query timed out.",
     openai.RateLimitError.__name__: "Query was rate limited.",
     openai.APIConnectionError.__name__: "Query failed due to connection error.",
     openai.BadRequestError.__name__: "Query failed due to request being bad.",
+    openai.AuthenticationError.__name__: "Query failed due to auth error (check API key).",
+    openai.InternalServerError.__name__: "Query failed due to API returning an internal server error.",
     "content_filter": "Response stopped due to content violation.",
     "ERR_generic": "Query failed due to error",
 }
 
 async def resend_failed_queries(failed_queries):
     tasks = []
-    while (failed_queries):
+    while (True):
         tasks.clear()
         await handle_failed_queries(failed_queries)
         for failed_query in failed_queries:
             tasks.append(asyncio.create_task(failed_query.query.run()))
         failed_queries.clear()
         failed_queries = await asyncio.gather(*tasks, return_exceptions=True)
+        if (sum(map(lambda x: x is True, failed_queries)) == 0):
+            return
 
 async def handle_failed_queries(query_exceptions):
     for exception in query_exceptions:
@@ -31,7 +58,7 @@ async def handle_failed_queries(query_exceptions):
             handle_ratelimit(exception.query)
         elif (exception.error_type == "content_filter"):
             handle_content_violation(exception.query)
-        elif (exception.error_type == "ERR_generic"):
+        else:
             exception.query.should_run = False
 
 def handle_content_violation(query):
