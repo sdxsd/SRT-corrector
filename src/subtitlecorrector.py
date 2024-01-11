@@ -35,7 +35,6 @@ import utils
 from config import Config
 from query import Query, QueryException
 
-
 class SubtitleCorrector:
     def __init__(self, chosen_prompt):
         self.client = AsyncOpenAI()
@@ -97,7 +96,7 @@ class SubtitleCorrector:
         failed_queries = []
         with open(subtitle_file, encoding="utf-8") as f:
             slist = list(srt.parse(f))
-        print("Parsed: {}".format(subtitle_file))
+        print(f"Parsed: {subtitle_file}")
         query_tasks = self.prepare_queries(slist)
         try:
             await asyncio.gather(*query_tasks)
@@ -105,7 +104,7 @@ class SubtitleCorrector:
             failed_queries.append(e)
         exceptions.handle_failed_queries(self.failed_queries)
         responses = self.assemble_queries()
-        print("All responses received.{}Estimated cost: €{}".format(os.linesep, self.calculate_cost()))
+        print(f"All responses received.{os.linesep}Estimated cost: €{self.calculate_cost()}")
         return (self.replace_sub_content(''.join(responses).splitlines(), slist))
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.

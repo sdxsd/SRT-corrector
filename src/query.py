@@ -65,13 +65,13 @@ class Query:
         
     # Keeps the user informed.
     def report_status(self):
-        print("Sending query with token count: {} | Query index: {}".format(self.content.token_count, self.idx))
+        print(f"Sending query with token count: {self.content.token_count} | Query index: {self.idx}")
 
     async def run(self):
         self.report_status()
         answer = await self.query_chatgpt()
         while (utils.count_subs(answer) != utils.count_subs(self.content.query_text)):
-            print("Inconsistent output, resending: {}".format(self.idx))
+            print(f"Inconsistent output, resending: {self.idx}")
             answer = await self.query_chatgpt()
         self.response = answer
                  
@@ -87,7 +87,7 @@ class Query:
             raise QueryException(self, e)
         if (response.choices[0].finish_reason != "stop"):
             raise QueryException(self, None, response.choices[0].finish_reason)
-        print("Query index: {} | Response received in: {} seconds".format(self.idx, round((time.time() - start), 2)))
+        print(f"Query index: {self.idx} | Response received in: {round((time.time() - start), 2)} seconds")
         self.token_usage_input += response.usage.prompt_tokens
         self.token_usage_output += response.usage.completion_tokens
         answer = response.choices[0].message.content
