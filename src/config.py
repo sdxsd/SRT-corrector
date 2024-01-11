@@ -59,7 +59,7 @@ class Config():
             with open(config_path, "w") as f:
                 default_config["prompt_directory"] = os.path.join(os.path.expanduser("~"), "prompts").replace("\\", "\\\\")
                 print(f"Your prompt directory will be located here: {default_config['prompt_directory']}")
-                f.write(json.dump(default_config))
+                f.write(json.dumps(default_config))
         elif result == False:
             print("Cannot continue without config. Program exiting.")
             exit()

@@ -33,7 +33,7 @@ import prompts as prompts
 import srt
 import utils
 from config import Config
-from query import Query, QueryException
+from query import Query, QueryContent, QueryException
 
 class SubtitleCorrector:
     def __init__(self, chosen_prompt):
@@ -72,14 +72,8 @@ class SubtitleCorrector:
             query_text += (os.linesep.join([str(sub.index), sub.content]) + os.linesep)
             token_count = utils.num_tokens(query_text)
             if (token_count > self.config.tokens_per_query or (slist[-1].index == sub.index)):
-                self.queries.append(Query(
-                    idx,
-                    self.client,
-                    self.chosen_prompt,
-                    query_text,
-                    token_count,
-                    self.config
-                ))
+                query_content = QueryContent(self.chosen_prompt, query_text, self.config, token_count)
+                self.queries.append(Query(idx, self.client, query_content))
                 query_tasks.append(asyncio.create_task(self.queries[idx].run()))
                 query_text = ""
                 idx += 1

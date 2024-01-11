@@ -30,23 +30,23 @@ from typing import Optional
 import utils
 
 class QueryException(Exception):
-    def __init__(self, query, error: Optional[openai.APIError], finish_reason="") -> None:
-        self.query = query
-        self.error = error
-        self.finish_reason = finish_reason 
-        
+    def __init__(self, query, error_type) -> None:
+        self.query: Query = query
+        self.error_type: str = error_type
+
 class QueryContent:
     def __init__(self, prompt, query_text, config, token_count):
+        self.prompt = prompt
         self.query_text = query_text
         self.model = config.model
         self.messages = [
-            {"role": "system", "content": prompt},
+            {"role": "system", "content": prompt.instructions},
             {"role": "user", "content": query_text}
         ]
         for example in self.prompt.examples:
-            self.content.append(example.example_input)
-            self.content.append(example.example_output)
-        self.token_count = token_count + utils.num_tokens(prompt)
+            self.messages.append(example.example_input)
+            self.messages.append(example.example_output)
+        self.token_count = (token_count + utils.num_tokens(prompt.instructions))
  
 class Query:
     def __init__(self, idx, client, content):
@@ -84,9 +84,9 @@ class Query:
                 messages=self.content.messages
             )
         except openai.APIError as e:
-            raise QueryException(self, e)
+            raise QueryException(self, type(e).__name__)
         if (response.choices[0].finish_reason != "stop"):
-            raise QueryException(self, None, response.choices[0].finish_reason)
+            raise QueryException(self, response.choices[0].finish_reason)
         print(f"Query index: {self.idx} | Response received in: {round((time.time() - start), 2)} seconds")
         self.token_usage_input += response.usage.prompt_tokens
         self.token_usage_output += response.usage.completion_tokens

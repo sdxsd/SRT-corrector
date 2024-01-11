@@ -1,11 +1,20 @@
 from query import Query, QueryContent, QueryException
 
-async def resend_failed_queries(queries: QueryException):
-    while queries:
-        for query in queries[:]:
-            if query.error is not None:
+# Handleable errors
+Errors = {
+    "FIN_content": "Response stopped due to content violation.",
+    "API_timeout": "Request timed out.",
+    "API_ratelimit": "Request ratelimited.",
+    "ERR_generic": "Request failed due to error",
+}
+
+# async def resend_failed_queries(queries: QueryException):
+#     while queries:
+#         for query in queries[:]:
+#             if query.error is not None:
+#                 quer
                 
-async def handle_content_violation(self, exception):
+async def handle_content_violation(query):
     result = ""
     print(exception.query_text)
     print("Explain how processing this text is not a content policy violation.") 
