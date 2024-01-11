@@ -26,7 +26,6 @@
 import openai
 import os
 import time
-from typing import Optional
 import utils
 
 class QueryException(Exception):
@@ -62,6 +61,7 @@ class Query:
         self.timeouts_encountered = 0
         self.max_timeouts = 10
         self.response = ""
+        self.should_run = True
         
     # Keeps the user informed.
     def report_status(self):
@@ -69,6 +69,8 @@ class Query:
 
     async def run(self):
         self.report_status()
+        if (self.should_run is False):
+            return (self.content.query_text)
         answer = await self.query_chatgpt()
         while (utils.count_subs(answer) != utils.count_subs(self.content.query_text)):
             print(f"Inconsistent output, resending: {self.idx}")
