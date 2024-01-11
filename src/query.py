@@ -1,8 +1,8 @@
 import openai
+from openai import AsyncOpenAI
 import os
 import time
 import asyncio
-from openai import AsyncOpenAI
 
 # Only used for errors originating from the finish_reason.
 error_messages = {
@@ -19,8 +19,8 @@ class QueryException(Exception):
         super().__init__(message)
 
 class Query:
-    def __init__(self, idx, prompt, query_text, token_count, client, config):
-        self.client = client
+    def __init__(self, idx, prompt, query_text, token_count, config):
+        self.client = AsyncOpenAI()
         self.model = config.model
         self.tokens_per_query = config.tokens_per_query
         self.idx = idx
