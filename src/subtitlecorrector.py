@@ -25,6 +25,7 @@
 
 # A program is free software if users have all of these freedoms.
 
+from parsing import load_subs
 from error import resend_failed_queries
 from query import Query, QueryContent
 from openai import AsyncOpenAI
@@ -58,6 +59,8 @@ class SubtitleCorrector:
 
     async def process_subs(self, subtitle_file):
         slist = utils.parse_subtitle_file(subtitle_file)
+        segments = load_subs(slist, self.config.tokens_per_query, 1, self.config.model)
+        exit()
         queries, query_tasks = self.prepare_queries(slist)
         failed_queries = await asyncio.gather(*query_tasks, return_exceptions=True)
         await resend_failed_queries(failed_queries)
