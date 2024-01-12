@@ -43,25 +43,6 @@ class SubtitleCorrector:
         self.queries = []
         self.failed_queries = []
 
-    # Replaces the "content" variable of the original subtitle block list
-    # using the sum of the responses from GPT.
-    def replace_sub_content(self, rawlines, slist):
-        i = 0
-        for sub in slist:
-            sub.content = ""
-            digit_encountered = False
-            while (i < len(rawlines)):
-                if (rawlines[i].rstrip().isdigit() is True):
-                    if (digit_encountered is True):
-                        digit_encountered = False
-                        break
-                    else:
-                        digit_encountered = True
-                else:
-                    sub.content += ((" " if sub.content else "") + (rawlines[i] if rawlines[i].rstrip() != "" else ""))
-                i += 1
-        return (srt.compose(slist))
-
     # This function creates a list of queries (tasks)
     # which will later be executed by asyncio.gather()
     def prepare_queries(self, slist):
@@ -79,19 +60,6 @@ class SubtitleCorrector:
                 idx += 1
         return (query_tasks)
 
-    def assemble_queries(self):
-        failed_queries = 0
-        successful_queries = 0
-        responses = ""
-        for query in self.queries:
-            if (query.should_run is False):
-                failed_queries += 1
-            else:
-                successful_queries += 1
-            responses += query.response
-        print(f"({successful_queries}) Successful | ({failed_queries}) Failed")
-        return (responses)
-
     # raw subtitle data -> array of sub blocks -> array of tasks to be executed -> modified subtitle data -> ??? -> profit
     async def process_subs(self, subtitle_file):
         with open(subtitle_file, encoding="utf-8") as f:
@@ -101,10 +69,11 @@ class SubtitleCorrector:
         failed_queries = await asyncio.gather(*query_tasks, return_exceptions=True)
         if (failed_queries):
             await exceptions.resend_failed_queries(failed_queries)
-        responses = self.assemble_queries()
+        successful, failed, responses = utils.assemble_queries()
+        print(f"({successful}) Successful | ({failed}) Failed")
         print("All queries resolved.")
         print(f"Estimated cost: €{utils.calculate_cost(self.queries, self.config.model)}")
-        return (self.replace_sub_content(''.join(responses).splitlines(), slist))
+        return (utils.replace_sub_content(''.join(responses).splitlines(), slist))
 
 # Reads the raw SRT data and passes it to ChatGPT to be processed.
 def correct_subtitles(subtitle_file, prompt, outputfile="output.srt"):

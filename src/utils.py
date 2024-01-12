@@ -67,3 +67,34 @@ def calculate_cost(queries, model):
         input_usage += query.token_usage_input
         output_usage += query.token_usage_output
     return (round((API_prices[model]["input_price"] * input_usage) + (API_prices[model]["output_price"] * output_usage), 2))
+
+def assemble_queries(queries):
+    failed = 0
+    successful = 0
+    responses = ""
+    for query in queries:
+        if (query.should_run is False):
+            failed += 1
+        else:
+            successful += 1
+        responses += query.response
+    return (successful, failed, responses)
+
+    # Replaces the "content" variable of the original subtitle block list
+    # using the sum of the responses from GPT.
+def replace_sub_content(rawlines, slist):
+    i = 0
+    for sub in slist:
+        sub.content = ""
+        digit_encountered = False
+        while (i < len(rawlines)):
+            if (rawlines[i].rstrip().isdigit() is True):
+                if (digit_encountered is True):
+                    digit_encountered = False
+                    break
+                else:
+                    digit_encountered = True
+            else:
+                sub.content += ((" " if sub.content else "") + (rawlines[i] if rawlines[i].rstrip() != "" else ""))
+            i += 1
+    return (srt.compose(slist))
