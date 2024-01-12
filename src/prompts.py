@@ -26,6 +26,7 @@
 import json
 import os
 from os import walk
+from utils import num_tokens
 
 # Every instance of this object within Prompt will be appended to the query sent
 # to OpenAI as examples for how ChatGPT should responded.
@@ -46,10 +47,14 @@ class Prompt:
         obj = json.loads(prompt)
         self.name = obj["prompt_name"] # Name of prompt.
         self.instructions = os.linesep.join(obj["prompt_instructions"]) # Instructions for GPT.
+        self.tokens = num_tokens(self.instructions)
         self.examples = [] # Example inputs and outputs to aid in instruction.
         if "prompt_examples" in obj:
             for example in obj["prompt_examples"]:
                 self.examples.append(PromptExample(example))
+        for example in self.examples:
+            self.tokens += num_tokens(example.example_input)
+            self.tokens += num_tokens(example.example_output)
 
 # Instantiates a single Prompt object from a file.
 def load_prompt(file):

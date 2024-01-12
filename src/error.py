@@ -47,7 +47,6 @@
 # Because of this, the loop within resend_failed_queries() will continue until all the queries
 # have been resolved (either failed unrecoverably) or returned successful output from the API.
 
-from query import QueryException
 import openai
 import asyncio
 
@@ -105,7 +104,7 @@ def handle_content_violation(query):
     print("Your explanation will be appended to the end of the prompt and the query will be resent.")
     while (result == ""):
         result = input("> ")
-    query.content.prompt.instructions += result
+    query.prompt.instructions += result
 
 # Linear backoff.
 def handle_timeout(query):

@@ -23,7 +23,9 @@
 
 # A program is free software if users have all of these freedoms.
 
-from utils import count_subs
+from utils import count_subs, assemble_queries
+from error import resend_failed_queries
+import asyncio
 import openai
 import time
 import os
@@ -33,21 +35,20 @@ class QueryException(Exception):
         self.query: Query = query # Query object which has failed.
         self.error_type = error_type # Type of error which caused Query object to fail.
 
-class QueryContent:
-    def __init__(self, prompt, query_text, config, token_count):
-        self.prompt = prompt # Prompt object containing instructions for GPT.
-        self.query_text = query_text # Contains the chunk of subtitle data to be modified.
-        self.model = config.model # Model to be used for subtitle modification.
-        self.token_count = token_count # Total token count of Query to be sent.
-        self.messages = [ # Dictionary in format required by the OpenAI client. (sent as JSON eventually)
-            {"role": "system", "content": prompt.instructions},
-            {"role": "user", "content": query_text}
-        ]
-        for example in self.prompt.examples:
-            self.messages.append(example.example_input)
-            token_count += example.example_input
-            self.messages.append(example.example_output)
-            token_count += example.example_output
+class QuerySegment:
+    def __init__(self, segment, client, config):
+        self.queries = []
+        self.query_tasks = []
+        self.tokens = segment.tokens
+        for idx, chunk in enumerate(segment.chunks):
+            self.queries.append(Query(idx, client, config, chunk))
+            self.query_tasks.append(asyncio.create_task(self.queries[idx].run()))
+
+    async def run(self):
+        failed_queries = await asyncio.gather(*self.query_tasks, return_exceptions=True)
+        await resend_failed_queries(failed_queries)
+        successful, failed, responses = assemble_queries(self.queries)
+        print(f"Segment Queries: Successful ({successful}) Failed {failed}")
 
 # This class can be thought of as a package which contains the data to allow a request to
 # be sent to the OpenAI API. A given query contains a prompt, and the chunk of the original subtitle
@@ -57,10 +58,17 @@ class QueryContent:
 # The should_run boolean indicates if enough errors have been encountered such that a query
 # should not be re-run but instead returns the original text from the subtitle file.
 class Query:
-    def __init__(self, idx, client, content):
+    def __init__(self, idx, client, config, chunk):
+        self.prompt = config.prompt # Prompt object containing instructions for GPT.
+        self.query_text = chunk.glob() # Contains the chunk of subtitle data to be modified.
+        self.model = config.model # Model to be used for subtitle modification.
+        self.token_count = (chunk.tokens + config.prompt.tokens) # Total token count of Query to be sent.
+        self.messages = [ # Dictionary in format required by the OpenAI client. (sent as JSON eventually)
+            {"role": "system", "content": config.prompt.instructions},
+            {"role": "user", "content": self.query_text}
+        ]
         # Data required for sending query:
         self.client = client # Client object used for communication with the API.
-        self.content = content # QueryContent object.
         self.idx = idx # Index of Query, later can be used to reconstruct valid .SRT file.
         # Usage data for cost calculation:
         self.token_usage_input = 0 # Sum of input tokens used.
@@ -74,7 +82,7 @@ class Query:
         
     # Keeps the user informed.
     def report_status(self):
-        print(f"Sending query: {self.idx} Token count: {self.content.token_count}")
+        print(f"Sending query: {self.idx} Token count: {self.token_count}")
 
     # This function is a wrapper over query_chatgpt()
     # It runs query_chatgpt() and checks if the response
@@ -87,11 +95,11 @@ class Query:
     async def run(self):
         if (self.should_run is False):
             print(f"Query: {self.idx} failed unrecoverably.")
-            self.response = self.content.query_text
+            self.response = self.query_text
             return
         self.report_status()
         answer = await self.query_chatgpt()
-        while (count_subs(answer) != count_subs(self.content.query_text)):
+        while (count_subs(answer) != count_subs(self.query_text)):
             print(f"Inconsistent output, resending: {self.idx}")
             answer = await self.query_chatgpt()
         self.response = answer
@@ -108,8 +116,8 @@ class Query:
         start = time.time()
         try:
             response = await self.client.chat.completions.create(
-                model=self.content.model, 
-                messages=self.content.messages
+                model=self.model, 
+                messages=self.messages
             )
         except openai.APIError as e:
             raise QueryException(self, type(e).__name__)
