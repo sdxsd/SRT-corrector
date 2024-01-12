@@ -28,12 +28,11 @@
 from parsing import Segment, Chunk, Block, Tiers
 from query import QuerySegment
 from openai import AsyncOpenAI
-from parsing import load_subs
 from config import Config
 import asyncio
 import utils
 
-SEG_DELAY = 70
+SEG_DELAY = 1
 
 class SubtitleCorrector:
     def __init__(self, prompt, subtitle_file):
@@ -41,8 +40,8 @@ class SubtitleCorrector:
         self.config = Config() # Config object which contains configuration options.
         self.config.prompt = prompt # Object containing instructions for how GPT should modify the subs.
         self.subtitle_file = subtitle_file
-        self.subs = utils.parse_subtitle_file(self.subtitle_file)
-        self.segments = load_subs() # An array of Segment objects parsed from the subtitle_file.
+        self.subs = utils.parse_subtitle_file(self.subtitle_file) # List of Sub objects.
+        self.segments = self.load_subs() # An array of Segment objects parsed from the subtitle_file.
         self.cost = 0.0 # Total cost of processing the subtitle.
         self.successful_queries = 0 # Number of successfully returned queries.
         self.failed_queries = 0 # Number of unrecoverably failed queries.
@@ -50,7 +49,9 @@ class SubtitleCorrector:
 
     # Loads a whole sub file as an array of Segment objects.
     def load_subs(self):
-        segments, chunks, blocks = []
+        segments = []
+        chunks = []
+        blocks = []
         for sub in self.subs:
             blocks.append(Block(sub))
             if (sum(map(lambda b: b.tokens, blocks)) >= self.config.tokens_per_query):
@@ -63,17 +64,19 @@ class SubtitleCorrector:
         segments.append(Segment(chunks))
         return (segments)
 
+    # Returns modified subtitle data.
     async def run(self):
         query_segments = []
         for segment in self.segments:
             query_segments.append(QuerySegment(segment, self.client, self.config))
         for query_seg in query_segments:
+            print("Entering new segment.")
             if (query_seg != query_segments[0]):
                 print(f"Sleeping for {SEG_DELAY} seconds before processing next segment...")
                 await asyncio.sleep(SEG_DELAY)
             result = await query_seg.run()
             self.responses += result
-        utils.exit_message(query_segments)
+        utils.exit_message(query_segments, self.config.model)
         return (utils.replace_sub_content(''.join(self.responses).splitlines(), self.subs))
 
 def correct_subtitles(subtitle_file, prompt, outputfile="output.srt"):

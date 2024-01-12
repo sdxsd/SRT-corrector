@@ -34,8 +34,9 @@ from prompts import Prompt
 # The sweet spot for tokens per query is from 150-300, results above or below that may vary.
 default_config = {
     "model": "gpt-4-1106-preview",
+    "tokens_per_query": 300,
     "prompt_directory": "",
-    "tokens_per_query": 300
+    "tier": 1
 }
 
 # Rudimentary config class.
@@ -46,6 +47,7 @@ class Config():
             self.generate_default_config(config_path, config_dir)
         with open(config_path) as f:     
             obj = json.loads(f.read())
+        self.tier = obj['tier']
         self.model = obj['model'] # Model to use.
         self.prompt_directory = obj['prompt_directory'] # Directory where prompts are stored.
         self.tokens_per_query = obj['tokens_per_query'] # Amount of tokens per query.

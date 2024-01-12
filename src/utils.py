@@ -62,10 +62,10 @@ def analyse_results(query_segments):
                 successful += 1
     print(f"({successful}) Successful ({failed}) Failed")
 
-def exit_message(query_segments):
+def exit_message(query_segments, model):
     print("All queries resolved.")
     analyse_results(query_segments)
-    print(f"Estimated cost: €{calculate_cost(query_segments)}")
+    print(f"Estimated cost: €{calculate_cost(query_segments, model)}")
 
 # I <3 one line functions.
 def count_subs(subs):
