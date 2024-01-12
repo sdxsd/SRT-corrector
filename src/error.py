@@ -51,6 +51,7 @@ from query import QueryException
 import openai
 import asyncio
 
+# Mapping of error names to messages.
 Errors = {
     openai.APITimeoutError.__name__: "Query timed out.",
     openai.RateLimitError.__name__: "Query was rate limited.",
@@ -62,6 +63,7 @@ Errors = {
     "ERR_generic": "Query failed due to error",
 }
 
+# Modify and run() again till all Queries are either succesful or have failed unrecoverably.
 async def resend_failed_queries(failed_queries):
     if (not failed_queries):
         return
@@ -76,6 +78,7 @@ async def resend_failed_queries(failed_queries):
         if (sum(map(lambda x: x is True, failed_queries)) == 0):
             return
 
+# Modify state of failed queries.
 async def handle_failed_queries(query_exceptions):
     for exception in query_exceptions:
         print(f"Query: {exception.query.idx} | {Errors[exception.error_type]}")
@@ -88,6 +91,7 @@ async def handle_failed_queries(query_exceptions):
         else:
             exception.query.should_run = False
 
+# Your negotiation skills better be good.
 def handle_content_violation(query):
     result = ""
     print(query.query_text)
@@ -97,6 +101,7 @@ def handle_content_violation(query):
         result = input("> ")
     query.content.prompt.instructions += result
 
+# Linear backoff.
 def handle_timeout(query):
     query.timeouts_encountered += 1
     query.delay += 5
@@ -106,6 +111,7 @@ def handle_timeout(query):
     else:
         query.should_run = True
 
+# Exponential backoff.
 def handle_ratelimit(query):
     if (query.query_delay > 256):
         print(f"Query: {query.idx} | Unable to overcome rate limit.")
