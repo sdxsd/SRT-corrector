@@ -74,7 +74,7 @@ class Query:
         
     # Keeps the user informed.
     def report_status(self):
-        print(f"Sending query: {self.idx} | Token count: {self.content.token_count}")
+        print(f"Sending query: {self.idx} Token count: {self.content.token_count}")
 
     # This function is a wrapper over query_chatgpt()
     # It runs query_chatgpt() and checks if the response
@@ -117,7 +117,7 @@ class Query:
         self.token_usage_output += response.usage.completion_tokens
         if (response.choices[0].finish_reason != "stop"):
             raise QueryException(self, response.choices[0].finish_reason)
-        print(f"Query: {self.idx} | Response received in: {round((time.time() - start), 2)} seconds")
+        print(f"Query: {self.idx} Response received in: {round((time.time() - start), 2)} seconds")
         answer = response.choices[0].message.content
         if (answer[-1] != os.linesep):
             answer += os.linesep

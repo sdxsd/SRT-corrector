@@ -63,9 +63,15 @@ Errors = {
     "ERR_generic": "Query failed due to error",
 }
 
+def list_empty(list_to_check):
+    if (sum(map(lambda x: x is True, list_to_check)) == 0):
+        return True
+    else:
+        return (False)
+
 # Modify and run() again till all Queries are either succesful or have failed unrecoverably.
 async def resend_failed_queries(failed_queries):
-    if (not failed_queries):
+    if (list_empty(failed_queries) is True):
         return
     tasks = []
     while (True):
@@ -75,13 +81,13 @@ async def resend_failed_queries(failed_queries):
             tasks.append(asyncio.create_task(failed_query.query.run()))
         failed_queries.clear()
         failed_queries = await asyncio.gather(*tasks, return_exceptions=True)
-        if (sum(map(lambda x: x is True, failed_queries)) == 0):
+        if (list_empty(failed_queries) is True):
             return
 
 # Modify state of failed queries.
 async def handle_failed_queries(query_exceptions):
     for exception in query_exceptions:
-        print(f"Query: {exception.query.idx} | {Errors[exception.error_type]}")
+        print(f"Query: {exception.query.idx} {Errors[exception.error_type]}")
         if (exception.error_type == openai.APITimeoutError.__name__):
             handle_timeout(exception.query)
         elif (exception.error_type == openai.RateLimitError.__name__):
@@ -106,7 +112,7 @@ def handle_timeout(query):
     query.timeouts_encountered += 1
     query.delay += 5
     if (query.timeouts_encountered > query.max_timeouts):
-        print(f"Query: {query.idx} | Too many timeouts.")
+        print(f"Query: {query.idx} Too many timeouts.")
         query.should_run = False
     else:
         query.should_run = True
@@ -114,7 +120,7 @@ def handle_timeout(query):
 # Exponential backoff.
 def handle_ratelimit(query):
     if (query.query_delay > 256):
-        print(f"Query: {query.idx} | Unable to overcome rate limit.")
+        print(f"Query: {query.idx} Unable to overcome rate limit.")
         query.should_run = False
     if (query.query_delay == 0):
         query.query_delay = 30

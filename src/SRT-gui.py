@@ -61,6 +61,7 @@ class SRTCorrectorGui:
             self.path_entry.config(state="readonly")
             self.ofile_button.config(state="normal")
 
+    # Select output directory.
     def choose_odir(self):
         self.output_dir = filedialog.askdirectory()
         if self.output_dir:
