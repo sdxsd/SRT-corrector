@@ -25,10 +25,10 @@
 
 # A program is free software if users have all of these freedoms.
 
-from parsing import load_subs
 from error import resend_failed_queries
 from query import Query, QueryContent
 from openai import AsyncOpenAI
+from parsing import load_subs
 from config import Config
 from os import linesep
 import asyncio
@@ -41,33 +41,28 @@ class SubtitleCorrector:
         self.prompt = prompt # Object containing instructions for how GPT should modify the subs.
         self.prompt_tcount = utils.num_tokens(self.prompt.instructions) # Token count of the instructions.
 
-    def prepare_queries(self, slist):
-        query_text = ""
+    def end_message(self, queries, successful, failed):
+        print(f"({successful}) Successful ({failed}) Failed")
+        print("All queries resolved.")
+        print(f"Estimated cost: €{utils.calculate_cost(queries, self.config.model)}")
+
+    def prepare_queries(self, chunks):
         queries = []
         query_tasks = []
-        idx = 0
-        for sub in slist:
-            query_text += (linesep.join([str(sub.index), sub.content]) + linesep)
-            token_count = utils.num_tokens(query_text)
-            if (token_count > self.config.tokens_per_query or (slist[-1].index == sub.index)):
-                query_content = QueryContent(self.prompt, query_text, self.config, token_count + self.prompt_tcount)
-                queries.append(Query(idx, self.client, query_content))
-                query_tasks.append(asyncio.create_task(queries[idx].run()))
-                query_text = ""
-                idx += 1
+        for idx, chunk in enumerate(chunks):
+            query_content = QueryContent(self.prompt, chunk.glob(), self.config, chunk.tokens)
+            queries.append(Query(idx, self.client, query_content))
+            query_tasks.append(asyncio.create_task(queries[idx].run()))
         return (queries, query_tasks)
 
     async def process_subs(self, subtitle_file):
         slist = utils.parse_subtitle_file(subtitle_file)
         segments = load_subs(slist, self.config.tokens_per_query, 1, self.config.model)
-        exit()
-        queries, query_tasks = self.prepare_queries(slist)
+        queries, query_tasks = self.prepare_queries(segments[0].chunks)
         failed_queries = await asyncio.gather(*query_tasks, return_exceptions=True)
         await resend_failed_queries(failed_queries)
         successful, failed, responses = utils.assemble_queries(queries)
-        print(f"({successful}) Successful ({failed}) Failed")
-        print("All queries resolved.")
-        print(f"Estimated cost: €{utils.calculate_cost(queries, self.config.model)}")
+        self.end_message(queries, successful, failed)
         return (utils.replace_sub_content(''.join(responses).splitlines(), slist))
 
 def correct_subtitles(subtitle_file, prompt, outputfile="output.srt"):
