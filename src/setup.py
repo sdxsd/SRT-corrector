@@ -13,7 +13,11 @@ options = {
         'srt',
         'tiktoken',
         'cchardet',
-        'chardet'
+        'chardet',
+        'asyncio',
+        'tkinter',
+        'platform',
+        'json'
     ],
     'iconfile': './icns/SRT-corrector.icns'
 }

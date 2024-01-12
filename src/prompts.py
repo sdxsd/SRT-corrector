@@ -44,9 +44,9 @@ class PromptExample:
 class Prompt:
     def __init__(self, prompt):
         obj = json.loads(prompt)
-        self.name = obj["prompt_name"]
-        self.instructions = os.linesep.join(obj["prompt_instructions"])
-        self.examples = []
+        self.name = obj["prompt_name"] # Name of prompt.
+        self.instructions = os.linesep.join(obj["prompt_instructions"]) # Instructions for GPT.
+        self.examples = [] # Example inputs and outputs to aid in instruction.
         if "prompt_examples" in obj:
             for example in obj["prompt_examples"]:
                 self.examples.append(PromptExample(example))

@@ -69,6 +69,7 @@ def calculate_cost(queries, model):
         output_usage += query.token_usage_output
     return (round((API_prices[model]["input_price"] * input_usage) + (API_prices[model]["output_price"] * output_usage), 2))
 
+# Globs all responses into single string.
 def assemble_queries(queries):
     failed = 0
     successful = 0
@@ -81,6 +82,7 @@ def assemble_queries(queries):
         responses += query.response
     return (successful, failed, responses)
 
+# Parses a given .SRT file and returns it's contents as an array.
 def parse_subtitle_file(subtitle_file):
     slist = []
     try:

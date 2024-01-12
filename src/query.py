@@ -25,27 +25,29 @@
 
 from utils import count_subs
 import openai
-import os
 import time
+import os
 
 class QueryException(Exception):
     def __init__(self, query, error_type):
-        self.query: Query = query
-        self.error_type = error_type
+        self.query: Query = query # Query object which has failed.
+        self.error_type = error_type # Type of error which caused Query object to fail.
 
 class QueryContent:
     def __init__(self, prompt, query_text, config, token_count):
-        self.prompt = prompt
-        self.query_text = query_text
-        self.model = config.model
-        self.messages = [
+        self.prompt = prompt # Prompt object containing instructions for GPT.
+        self.query_text = query_text # Contains the chunk of subtitle data to be modified.
+        self.model = config.model # Model to be used for subtitle modification.
+        self.token_count = token_count # Total token count of Query to be sent.
+        self.messages = [ # Dictionary in format required by the OpenAI client. (sent as JSON eventually)
             {"role": "system", "content": prompt.instructions},
             {"role": "user", "content": query_text}
         ]
         for example in self.prompt.examples:
             self.messages.append(example.example_input)
+            token_count += example.example_input
             self.messages.append(example.example_output)
-        self.token_count = token_count
+            token_count += example.example_output
 
 # This class can be thought of as a package which contains the data to allow a request to
 # be sent to the OpenAI API. A given query contains a prompt, and the chunk of the original subtitle
@@ -57,18 +59,18 @@ class QueryContent:
 class Query:
     def __init__(self, idx, client, content):
         # Data required for sending query:
-        self.client = client
-        self.content = content
-        self.idx = idx
+        self.client = client # Client object used for communication with the API.
+        self.content = content # QueryContent object.
+        self.idx = idx # Index of Query, later can be used to reconstruct valid .SRT file.
         # Usage data for cost calculation:
-        self.token_usage_input = 0
-        self.token_usage_output = 0
+        self.token_usage_input = 0 # Sum of input tokens used.
+        self.token_usage_output = 0 # Sum of output tokens used.
         # Error specific data
-        self.query_delay = 0
-        self.timeouts_encountered = 0
-        self.max_timeouts = 10
-        self.response = ""
-        self.should_run = True
+        self.query_delay = 0 # Amount of time to wait before sending API request.
+        self.timeouts_encountered = 0 # Number of timeouts encountered.
+        self.max_timeouts = 10 # Maximum tolerable timeouts before giving up on request.
+        self.response = "" # Response from GPT (or original text in case of unrecoverable failure).
+        self.should_run = True # If the Query should run or simply return the original text.
         
     # Keeps the user informed.
     def report_status(self):

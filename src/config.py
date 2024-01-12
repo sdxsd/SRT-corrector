@@ -45,9 +45,9 @@ class Config():
             self.generate_default_config(config_path, config_dir)
         with open(config_path) as f:     
             obj = json.loads(f.read())
-        self.model = obj['model']
-        self.prompt_directory = obj['prompt_directory']
-        self.tokens_per_query = obj['tokens_per_query']    
+        self.model = obj['model'] # Model to use.
+        self.prompt_directory = obj['prompt_directory'] # Directory where prompts are stored.
+        self.tokens_per_query = obj['tokens_per_query'] # Amount of tokens per query.
     
     # If a config is not found, this function will be called and prompt the user to generate and install one.     
     def generate_default_config(self, config_path, config_dir):

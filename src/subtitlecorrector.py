@@ -34,11 +34,11 @@ import asyncio
 import utils
 
 class SubtitleCorrector:
-    def __init__(self, chosen_prompt):
-        self.client = AsyncOpenAI()
-        self.config = Config()
-        self.chosen_prompt = chosen_prompt
-        self.prompt_tcount = utils.num_tokens(chosen_prompt.instructions)
+    def __init__(self, prompt):
+        self.client = AsyncOpenAI() # OpenAI client used to communicate with the API.
+        self.config = Config() # Config object which contains configuration options.
+        self.prompt = prompt # Object containing instructions for how GPT should modify the subs.
+        self.prompt_tcount = utils.num_tokens(self.prompt.instructions) # Token count of the instructions.
 
     def prepare_queries(self, slist):
         query_text = ""
@@ -49,7 +49,7 @@ class SubtitleCorrector:
             query_text += (linesep.join([str(sub.index), sub.content]) + linesep)
             token_count = utils.num_tokens(query_text)
             if (token_count > self.config.tokens_per_query or (slist[-1].index == sub.index)):
-                query_content = QueryContent(self.chosen_prompt, query_text, self.config, token_count + self.prompt_tcount)
+                query_content = QueryContent(self.prompt, query_text, self.config, token_count + self.prompt_tcount)
                 queries.append(Query(idx, self.client, query_content))
                 query_tasks.append(asyncio.create_task(queries[idx].run()))
                 query_text = ""
@@ -67,7 +67,6 @@ class SubtitleCorrector:
         print(f"Estimated cost: €{utils.calculate_cost(queries, self.config.model)}")
         return (utils.replace_sub_content(''.join(responses).splitlines(), slist))
 
-# Reads the raw SRT data and passes it to ChatGPT to be processed.
 def correct_subtitles(subtitle_file, prompt, outputfile="output.srt"):
     subtitlecorrector = SubtitleCorrector(prompt)
     full_output = asyncio.run(subtitlecorrector.process_subs(subtitle_file))
