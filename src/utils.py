@@ -27,7 +27,6 @@
 
 import tiktoken
 import srt
-
 # Models and their different prices per token.
 API_prices = {
     "gpt-4-1106-preview": {
@@ -52,10 +51,21 @@ API_prices = {
     }
 }
 
-def exit_message(cost, successful, failed):
+def analyse_results(query_segments):
+    failed = 0
+    successful = 0
+    for query_seg in query_segments:
+        for query in query_seg.queries:
+            if query.should_run is False:
+                failed += 1
+            else:
+                successful += 1
     print(f"({successful}) Successful ({failed}) Failed")
+
+def exit_message(query_segments):
     print("All queries resolved.")
-    print(f"Estimated cost: €{cost}")
+    analyse_results(query_segments)
+    print(f"Estimated cost: €{calculate_cost(query_segments)}")
 
 # I <3 one line functions.
 def count_subs(subs):
@@ -66,26 +76,21 @@ def num_tokens(raw_text):
     return (len(tiktoken.get_encoding("cl100k_base").encode(raw_text)))
 
 # Estimates the total cost in api usage.
-def calculate_cost(queries, model):
+def calculate_cost(query_segments, model):
     input_usage = 0
     output_usage = 0
-    for query in queries:
-        input_usage += query.token_usage_input
-        output_usage += query.token_usage_output
+    for query_seg in query_segments:
+        for query in query_seg.queries:
+            input_usage += query.token_usage_input
+            output_usage += query.token_usage_output
     return (round((API_prices[model]["input_price"] * input_usage) + (API_prices[model]["output_price"] * output_usage), 2))
 
 # Globs all responses into single string.
 def assemble_queries(queries):
-    failed = 0
-    successful = 0
     responses = ""
     for query in queries:
-        if (query.should_run is False):
-            failed += 1
-        else:
-            successful += 1
         responses += query.response
-    return (successful, failed, responses)
+    return (responses)
 
 # Parses a given .SRT file and returns it's contents as an array.
 def parse_subtitle_file(subtitle_file):

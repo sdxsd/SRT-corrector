@@ -70,8 +70,6 @@ def list_empty(list_to_check):
 
 # Modify and run() again till all Queries are either succesful or have failed unrecoverably.
 async def resend_failed_queries(failed_queries):
-    if (list_empty(failed_queries) is True):
-        return
     tasks = []
     while (True):
         tasks.clear()

@@ -87,23 +87,6 @@ def display_sub_file(segments):
     for segment in segments:
         segment.display_chunks()
 
-# Loads a whole sub file as an array of Segment objects.
-def load_subs(subs, tokens_per_query, tier, model):
-    segments = []
-    chunks = []
-    blocks = []
-    for sub in subs:
-        blocks.append(Block(sub))
-        if (sum(map(lambda b: b.tokens, blocks)) >= tokens_per_query):
-            chunks.append(Chunk(blocks))
-            blocks.clear()
-        if (sum(map(lambda c: c.tokens, chunks)) >= Tiers[tier][model]['TPM']):
-            segments.append(Segment(chunks))
-            chunks.clear()
-    chunks.append(Chunk(blocks))
-    segments.append(Segment(chunks))
-    return (segments)
-
 # Segment is a collection of Chunks.
 # The number of Chunks will depend on the rate limit which is
 # dependent on the "tier" of the organisation as specified in the Config

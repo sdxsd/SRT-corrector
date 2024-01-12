@@ -53,8 +53,8 @@ class QuerySegment:
     async def run(self):
         failed_queries = await asyncio.gather(*self.query_tasks, return_exceptions=True)
         await resend_failed_queries(failed_queries)
-        successful, failed, responses = assemble_queries(self.queries)
-        return (successful, failed, calculate_cost(self.queries, self.config.model), responses)
+        responses = assemble_queries(self.queries)
+        return (responses)
 
 # This class can be thought of as a package which contains the data to allow a request to
 # be sent to the OpenAI API. A given query contains a prompt, and the chunk of the original subtitle
