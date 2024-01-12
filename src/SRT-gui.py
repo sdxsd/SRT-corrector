@@ -25,17 +25,16 @@
 
 # A program is free software if users have all of these freedoms.
 
-import subtitlecorrector as stc
+from tkinter import filedialog, OptionMenu, StringVar
 from subtitlecorrector import Config
+import subtitlecorrector as stc
 import prompts as prompts
 import tkinter as tk
-from tkinter import *
-from tkinter import filedialog
-import platform
 import os
 
-# Note: This GUI code was hacked together in a day, Thusly it is incredibly messy. 
-#       If thou endeavourest to clean it up, then I hope that the spirit of programming walketh with thee. 
+# Note:
+# This GUI code was hacked together in a day, Thusly it is incredibly messy.
+# If thou endeavourest to clean it up, then I hope that the spirit of programming walketh with thee.
 
 class SRTCorrectorGui:
     # Process file.
