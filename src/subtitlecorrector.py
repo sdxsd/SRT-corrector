@@ -59,7 +59,7 @@ class SubtitleCorrector:
             self.successful_queries += success
             self.failed_queries += fail
             self.responses += responses
-        utils.exit_message(self.cost, self.successful, self.failed)
+        utils.exit_message(self.cost, self.successful_queries, self.failed_queries)
         return (utils.replace_sub_content(''.join(responses).splitlines(), slist))
 
 def correct_subtitles(subtitle_file, prompt, outputfile="output.srt"):
