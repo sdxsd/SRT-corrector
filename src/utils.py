@@ -26,6 +26,7 @@
 # A program is free software if users have all of these freedoms.
 
 import tiktoken
+import srt
 
 # Models and their different prices per token.
 API_prices = {
@@ -80,8 +81,22 @@ def assemble_queries(queries):
         responses += query.response
     return (successful, failed, responses)
 
-    # Replaces the "content" variable of the original subtitle block list
-    # using the sum of the responses from GPT.
+def parse_subtitle_file(subtitle_file):
+    slist = []
+    try:
+        with open(subtitle_file, encoding="utf-8") as f:
+            slist = list(srt.parse(f))
+    except UnicodeError:
+        with open(subtitle_file) as f:
+            slist = list(srt.parse(f))
+    if (not slist):
+        print(f"Failed to parse {subtitle_file}, exiting...")
+        exit()
+    print(f"Parsed: {subtitle_file}")
+    return (slist)
+
+# Replaces the "content" variable of the original subtitle block list
+# using the sum of the responses from GPT.
 def replace_sub_content(rawlines, slist):
     i = 0
     for sub in slist:

@@ -23,10 +23,10 @@
 
 # A program is free software if users have all of these freedoms.
 
+from utils import count_subs
 import openai
 import os
 import time
-import utils
 
 class QueryException(Exception):
     def __init__(self, query, error_type):
@@ -45,7 +45,7 @@ class QueryContent:
         for example in self.prompt.examples:
             self.messages.append(example.example_input)
             self.messages.append(example.example_output)
-        self.token_count = (token_count + utils.num_tokens(prompt.instructions))
+        self.token_count = token_count
 
 # This class can be thought of as a package which contains the data to allow a request to
 # be sent to the OpenAI API. A given query contains a prompt, and the chunk of the original subtitle
@@ -89,7 +89,7 @@ class Query:
             return
         self.report_status()
         answer = await self.query_chatgpt()
-        while (utils.count_subs(answer) != utils.count_subs(self.content.query_text)):
+        while (count_subs(answer) != count_subs(self.content.query_text)):
             print(f"Inconsistent output, resending: {self.idx}")
             answer = await self.query_chatgpt()
         self.response = answer
