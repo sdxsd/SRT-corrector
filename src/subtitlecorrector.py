@@ -25,41 +25,41 @@
 
 # A program is free software if users have all of these freedoms.
 
-from error import resend_failed_queries
-from query import Query
+from query import QuerySegment
 from openai import AsyncOpenAI
 from parsing import load_subs
 from config import Config
 import asyncio
 import utils
 
+SEG_DELAY = 70
+
 class SubtitleCorrector:
     def __init__(self, prompt):
         self.client = AsyncOpenAI() # OpenAI client used to communicate with the API.
         self.config = Config() # Config object which contains configuration options.
         self.config.prompt = prompt # Object containing instructions for how GPT should modify the subs.
-
-    def exit_message(self, queries, successful, failed):
-        print(f"({successful}) Successful ({failed}) Failed")
-        print("All queries resolved.")
-        print(f"Estimated cost: €{utils.calculate_cost(queries, self.config.model)}")
-
-    def prepare_queries(self, chunks):
-        queries = []
-        query_tasks = []
-        for idx, chunk in enumerate(chunks):
-            queries.append(Query(idx, self.client, chunk, self.config))
-            query_tasks.append(asyncio.create_task(queries[idx].run()))
-        return (queries, query_tasks)
+        self.cost = 0.0 # Total cost of processing the subtitle.
+        self.successful_queries = 0 # Number of successfully returned queries.
+        self.failed_queries = 0 # Number of unrecoverably failed queries.
+        self.responses = "" # Final response data.
 
     async def process_subs(self, subtitle_file):
+        query_segments = []
         slist = utils.parse_subtitle_file(subtitle_file)
         segments = load_subs(slist, self.config.tokens_per_query, 1, self.config.model)
-        queries, query_tasks = self.prepare_queries(segments[0].chunks)
-        failed_queries = await asyncio.gather(*query_tasks, return_exceptions=True)
-        await resend_failed_queries(failed_queries)
-        successful, failed, responses = utils.assemble_queries(queries)
-        self.exit_message(queries, successful, failed)
+        for segment in segments:
+            query_segments.append(QuerySegment(segment, self.client, self.config))
+        for query_seg in query_segments:
+            if (query_seg != query_segments[0]):
+                print(f"Sleeping for {SEG_DELAY} seconds before processing next segment...")
+                await asyncio.sleep(SEG_DELAY)
+            success, fail, seg_cost, responses = await query_seg.run()
+            self.cost += seg_cost
+            self.successful_queries += success
+            self.failed_queries += fail
+            self.responses += responses
+        utils.exit_message(self.cost, self.successful, self.failed)
         return (utils.replace_sub_content(''.join(responses).splitlines(), slist))
 
 def correct_subtitles(subtitle_file, prompt, outputfile="output.srt"):

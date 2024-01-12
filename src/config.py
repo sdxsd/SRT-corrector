@@ -26,7 +26,7 @@
 import os
 import platform
 import json
-from prompt import Prompt
+from prompts import Prompt
 
 # Default recommended config. 
 # Model should be the most up to date and cheapest GPT4 model.

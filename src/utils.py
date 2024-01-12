@@ -52,6 +52,11 @@ API_prices = {
     }
 }
 
+def exit_message(cost, successful, failed):
+    print(f"({successful}) Successful ({failed}) Failed")
+    print("All queries resolved.")
+    print(f"Estimated cost: €{cost}")
+
 # I <3 one line functions.
 def count_subs(subs):
     return (sum(map(lambda sub: sub.rstrip().isdigit() is True, subs.splitlines())))

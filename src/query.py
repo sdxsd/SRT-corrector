@@ -23,12 +23,20 @@
 
 # A program is free software if users have all of these freedoms.
 
-from utils import count_subs, assemble_queries
+from utils import count_subs, assemble_queries, calculate_cost
 from error import resend_failed_queries
 import asyncio
 import openai
 import time
 import os
+
+def prepare_queries(chunks, client, config):
+    queries = []
+    query_tasks = []
+    for idx, chunk in enumerate(chunks):
+        queries.append(Query(idx, client, config, chunk))
+        query_tasks.append(asyncio.create_task(queries[idx].run()))
+    return (queries, query_tasks)
 
 class QueryException(Exception):
     def __init__(self, query, error_type):
@@ -37,18 +45,16 @@ class QueryException(Exception):
 
 class QuerySegment:
     def __init__(self, segment, client, config):
-        self.queries = []
-        self.query_tasks = []
+        self.config = config
+        self.segment = segment
+        self.queries, self.query_tasks = prepare_queries(self.segment.chunks, client, config)
         self.tokens = segment.tokens
-        for idx, chunk in enumerate(segment.chunks):
-            self.queries.append(Query(idx, client, config, chunk))
-            self.query_tasks.append(asyncio.create_task(self.queries[idx].run()))
 
     async def run(self):
         failed_queries = await asyncio.gather(*self.query_tasks, return_exceptions=True)
         await resend_failed_queries(failed_queries)
         successful, failed, responses = assemble_queries(self.queries)
-        print(f"Segment Queries: Successful ({successful}) Failed {failed}")
+        return (successful, failed, calculate_cost(self.queries, self.config.model), responses)
 
 # This class can be thought of as a package which contains the data to allow a request to
 # be sent to the OpenAI API. A given query contains a prompt, and the chunk of the original subtitle
