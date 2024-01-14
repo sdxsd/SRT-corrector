@@ -37,8 +37,7 @@ SEG_DELAY = 70
 class SubtitleCorrector:
     def __init__(self, prompt, subtitle_file):
         self.client = AsyncOpenAI() # OpenAI client used to communicate with the API.
-        self.config = Config() # Config object which contains configuration options.
-        self.config.prompt = prompt # Object containing instructions for how GPT should modify the subs.
+        self.config = Config(prompt) # Config object which contains configuration options.
         self.subtitle_file = subtitle_file # Path to original input file.
         self.subs = utils.parse_subtitle_file(self.subtitle_file) # List of Sub objects.
         self.segments = self.load_subs() # An array of Segment objects parsed from the subtitle_file.

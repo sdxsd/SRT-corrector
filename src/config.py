@@ -40,7 +40,7 @@ default_config = {
 }
 
 # Rudimentary config class.
-class Config():
+class Config(prompt=""):
     def __init__(self): 
         config_path, config_dir = self.determine_config_path() 
         if (not os.path.exists(config_path)):
@@ -51,7 +51,7 @@ class Config():
         self.model = obj['model'] # Model to use.
         self.prompt_directory = obj['prompt_directory'] # Directory where prompts are stored.
         self.tokens_per_query = obj['tokens_per_query'] # Amount of tokens per query.
-        self.prompt: Prompt
+        self.prompt = prompt # Prompt to use.
 
     # If a config is not found, this function will be called and prompt the user to generate and install one.     
     def generate_default_config(self, config_path, config_dir):
