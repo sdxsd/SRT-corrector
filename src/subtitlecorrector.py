@@ -32,14 +32,14 @@ from config import Config
 import asyncio
 import utils
 
-SEG_DELAY = 1
+SEG_DELAY = 70
 
 class SubtitleCorrector:
     def __init__(self, prompt, subtitle_file):
         self.client = AsyncOpenAI() # OpenAI client used to communicate with the API.
         self.config = Config() # Config object which contains configuration options.
         self.config.prompt = prompt # Object containing instructions for how GPT should modify the subs.
-        self.subtitle_file = subtitle_file
+        self.subtitle_file = subtitle_file # Path to original input file.
         self.subs = utils.parse_subtitle_file(self.subtitle_file) # List of Sub objects.
         self.segments = self.load_subs() # An array of Segment objects parsed from the subtitle_file.
         self.cost = 0.0 # Total cost of processing the subtitle.
@@ -66,9 +66,7 @@ class SubtitleCorrector:
 
     # Returns modified subtitle data.
     async def run(self):
-        query_segments = []
-        for segment in self.segments:
-            query_segments.append(QuerySegment(segment, self.client, self.config))
+        query_segments = list(map(lambda x: QuerySegment(x, self.client, self.config), self.segments))
         for query_seg in query_segments:
             print("Entering new segment.")
             if (query_seg != query_segments[0]):
