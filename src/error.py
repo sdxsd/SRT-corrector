@@ -49,6 +49,7 @@
 
 import openai
 import asyncio
+from utils import failed_queries_from_list
 
 # Mapping of error names to messages.
 Errors = {
@@ -77,8 +78,9 @@ async def resend_failed_queries(failed_queries):
         for failed_query in failed_queries:
             tasks.append(asyncio.create_task(failed_query.query.run()))
         failed_queries.clear()
-        failed_queries = await asyncio.gather(*tasks, return_exceptions=True)
-        if (list_empty(failed_queries) is True):
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        failed_queries = failed_queries_from_list(results)
+        if (len(failed_queries) <= 0):
             return
 
 # Modify state of failed queries.

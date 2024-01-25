@@ -92,11 +92,21 @@ def assemble_queries(queries):
         responses += query.response
     return (responses)
 
+def failed_queries_from_list(results):
+    failed = []
+    for result in results:
+        if (result != True):
+            failed.append(result)
+    return (failed)
+
 # Parses a given .SRT file and returns it's contents as an array.
 def parse_subtitle_file(subtitle_file):
     slist = []
+    encoding: str
     try:
         with open(subtitle_file, encoding="utf-8") as f:
+            print("File is utf-8")
+            encoding = "utf-8"
             slist = list(srt.parse(f))
     except UnicodeError:
         with open(subtitle_file) as f:

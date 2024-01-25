@@ -23,7 +23,7 @@
 
 # A program is free software if users have all of these freedoms.
 
-from utils import count_subs, assemble_queries, calculate_cost
+from utils import count_subs, assemble_queries, failed_queries_from_list
 from error import resend_failed_queries
 import asyncio
 import openai
@@ -51,8 +51,10 @@ class QuerySegment:
         self.tokens = segment.tokens
 
     async def run(self):
-        failed_queries = await asyncio.gather(*self.query_tasks, return_exceptions=True)
-        await resend_failed_queries(failed_queries)
+        result = await asyncio.gather(*self.query_tasks, return_exceptions=True)
+        failed_queries = failed_queries_from_list(result)
+        if (len(failed_queries) > 0):
+            await resend_failed_queries(failed_queries)
         responses = assemble_queries(self.queries)
         return (responses)
 
@@ -102,13 +104,14 @@ class Query:
         if (self.should_run is False):
             print(f"Query: {self.idx} failed unrecoverably.")
             self.response = self.query_text
-            return
+            return True
         self.report_status()
         answer = await self.query_chatgpt()
         while (count_subs(answer) != count_subs(self.query_text)):
             print(f"Inconsistent output, resending: {self.idx}")
             answer = await self.query_chatgpt()
         self.response = answer
+        return True
 
     # This functions sends the query TO and receives the response
     # FROM the OpenAI API.
