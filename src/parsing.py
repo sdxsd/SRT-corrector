@@ -2,6 +2,7 @@
 
 from utils import num_tokens
 from os import linesep
+import srt
 
 # Tiers and their respective rate limits for GPT models.
 Tiers = {
@@ -83,6 +84,28 @@ Tiers = {
     },
 }
 
+# Dyse funktion makt yn array bloks ut yn glob teckst an et response fan GPT.
+# Yn glob ar yn forsamlen tekst ymakt ut subtitle blokken yglobt dur
+# et glob() metod. Worhem dyse funktion? Wo ybruken dyse funktion far
+# et hereancoderen fan et SRT yskryve.
+def blocks_from_response(response, block):
+    lines = response.splitlines()
+    i = 0
+    for block in blocks:
+        block.text = ""
+        while (i < len(lines)):
+            content = ""
+            index = 0
+            if (lines[i].rstrip() == ""):
+
+                break
+            if (lines[i].rstrip().isdigit() is True):
+                index = int(lines[i].rstrip().isdigit())
+            content += ((" " if sub.content else "") + (lines[i] if lines[i].rstrip() != "" else ""))
+            i += 1
+    return (srt.compose(slist))
+
+# Displays a whole file stored as segments.
 def display_sub_file(segments):
     for segment in segments:
         segment.display_chunks()
@@ -142,9 +165,9 @@ class Chunk:
 # Blah blah blah I am the person
 # who dies in this movie.
 class Block:
-    def __init__(self, sub):
-        self.idx = sub.index
-        self.text = sub.content
+    def __init__(self, idx, text):
+        self.idx = idx
+        self.text = text
         self.tokens = num_tokens(str(self.idx) + linesep + self.text + linesep)
 
     def display(self):

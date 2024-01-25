@@ -27,6 +27,7 @@
 
 import tiktoken
 import srt
+
 # Models and their different prices per token.
 API_prices = {
     "gpt-4-1106-preview": {
@@ -125,3 +126,6 @@ def replace_sub_content(rawlines, slist):
                 sub.content += ((" " if sub.content else "") + (rawlines[i] if rawlines[i].rstrip() != "" else ""))
             i += 1
     return (srt.compose(slist))
+
+def report_status(idx, token_count):
+    print(f"Sending query: {idx} Token count: {token_count}")

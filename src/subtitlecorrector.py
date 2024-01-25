@@ -52,7 +52,7 @@ class SubtitleCorrector:
         chunks = []
         blocks = []
         for sub in self.subs:
-            blocks.append(Block(sub))
+            blocks.append(Block(sub.index, sub.content))
             if (sum(map(lambda b: b.tokens, blocks)) >= self.config.tokens_per_query):
                 chunks.append(Chunk(blocks))
                 blocks.clear()

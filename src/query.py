@@ -23,7 +23,7 @@
 
 # A program is free software if users have all of these freedoms.
 
-from utils import count_subs, assemble_queries, calculate_cost
+from utils import count_subs, assemble_queries, calculate_cost, report_status
 from error import resend_failed_queries
 import asyncio
 import openai
@@ -62,7 +62,7 @@ class QuerySegment:
 # The class also contains error information such as how many timeouts have been encountered and
 # the current query delay.
 # The should_run boolean indicates if enough errors have been encountered such that a query
-# should not be re-run but instead returns the original text from the subtitle file.
+# should not be re-run but instead return the original text from the subtitle file.
 class Query:
     def __init__(self, idx, client, config, chunk):
         self.prompt = config.prompt # Prompt object containing instructions for GPT.
@@ -77,18 +77,14 @@ class Query:
         self.client = client # Client object used for communication with the API.
         self.idx = idx # Index of Query, later can be used to reconstruct valid .SRT file.
         # Usage data for cost calculation:
-        self.token_usage_input = 0 # Sum of input tokens used.
-        self.token_usage_output = 0 # Sum of output tokens used.
+        self.token_usage_input = 0 # Sum of input tokens sent.
+        self.token_usage_output = 0 # Sum of output tokens received.
         # Error specific data
         self.query_delay = 0 # Amount of time to wait before sending API request.
         self.timeouts_encountered = 0 # Number of timeouts encountered.
         self.max_timeouts = 10 # Maximum tolerable timeouts before giving up on request.
         self.response = "" # Response from GPT (or original text in case of unrecoverable failure).
         self.should_run = True # If the Query should run or simply return the original text.
-        
-    # Keeps the user informed.
-    def report_status(self):
-        print(f"Sending query: {self.idx} Token count: {self.token_count}")
 
     # This function is a wrapper over query_chatgpt()
     # It runs query_chatgpt() and checks if the response
@@ -103,7 +99,7 @@ class Query:
             print(f"Query: {self.idx} failed unrecoverably.")
             self.response = self.query_text
             return
-        self.report_status()
+        report_status(self.idx, self.token_count)
         answer = await self.query_chatgpt()
         while (count_subs(answer) != count_subs(self.query_text)):
             print(f"Inconsistent output, resending: {self.idx}")
