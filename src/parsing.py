@@ -92,7 +92,7 @@ class Chunk:
     def glob(self):
         glob = ""
         for block in self.blocks:
-            glob += str(block.idx) + linesep + block.text + linesep
+            glob += str(block.idx) + linesep + block.text + linesep + linesep
         return (glob)
 
 # Class representation of .SRT block with time stripped i.e

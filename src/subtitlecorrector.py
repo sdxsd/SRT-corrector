@@ -36,6 +36,32 @@ import time
 
 SEG_DELAY = 70
 
+# Program flow:
+# First the .SRT gets read in and parsed into one or multiple Segment objects
+# depending on the size of the file and the 'tier' of the organisation.
+# Next a list of QuerySegment objects are created from the Segment objects.
+# The QuerySegment object contains multiple Query objects which have a method called run().
+# The method run() sends the actual request to the API and receives the response back.
+# In addition it checks whether the response contains an equal amount of Block objects as the input.
+# Both the input and the response are represented as Chunk objects, this type of object
+# contains an array of Block objects which are a class representation of a single entry in a subtitle file.
+# The QuerySegment object also contains a run() method which will asynchronously execute the run() method
+# in each of the Query objects it contains.
+# If a Query fails during execution of the run() method, it will raise a QueryException.
+# Queries are run() asynchronously through the asyncio.gather() function, which returns a list containing
+# the return values of each of the functions it has executed. In addition, if a given task raises an exception
+# this exception will be included in the resulting list.
+# If every Query executes run() successfully then the list returned by asyncio.gather() will consist only
+# of a number of True values equivalent to the number of queries sent, but if a Query fails in its execution
+# of run(), then it will also contain QueryException objecs.
+# If present, these QueryException objects will be placed into their own list and sent to the
+# resend_failed_queries() function, which will then attempt to fix whatever error may have occurred and
+# then resend them. Queries will be continuously resent until they have failed too many times, or have succeeded.
+# If a Query fails enough times to be considered "unfixable" then the Query will return its original input.
+# This ensures that regardless of failure, a valid output .SRT will be created. This ensures
+# that no amount of API usage is wasted.
+# Finally the output will be converted to a singular string and written to the given outputfile.
+
 class SubtitleCorrector:
     def __init__(self, prompt, subtitle_file):
         self.client = AsyncOpenAI() # OpenAI client used to communicate with the API.

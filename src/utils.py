@@ -67,7 +67,7 @@ def calculate_cost(query_segments, model):
 def assemble_queries(queries):
     full_output = ""
     for query in queries:
-        full_output += query.response
+        full_output += query.response.glob()
     return (full_output)
 
 def failed_queries_from_list(results):
