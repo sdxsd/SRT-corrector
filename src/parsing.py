@@ -14,7 +14,7 @@ class Block:
         self.text = text
         self.tokens = num_tokens(str(self.idx) + linesep + self.text + linesep)
 
-    def display(self) -> None:
+    def display(self):
         print(f"Index: {self.idx}")
         print(f"Token count: {self.tokens}")
         print(f"Text:{linesep}{self.text}")
@@ -26,19 +26,19 @@ class Chunk:
         self.blocks = blocks
         self.tokens = (sum(map(lambda block: block.tokens, blocks)))
 
-    def append_to_chunk(self, block: Block) -> None:
+    def append_to_chunk(self, block: Block):
         self.blocks.append(block)
         self.tokens += block.tokens
 
-    def display(self) -> None:
+    def display(self):
         print(f"Number of blocks: {len(self.blocks)}")
         print(f"Total tokens in chunk: {self.tokens}")
 
-    def display_blocks(self) -> None:
+    def display_blocks(self):
         for block in self.blocks:
             block.display()
 
-    def glob(self) -> str:
+    def glob(self):
         glob = ""
         for block in self.blocks:
             glob += str(block.idx) + linesep + block.text + linesep
