@@ -83,7 +83,7 @@ class Query:
         self.token_usage_input = 0 # Sum of input tokens sent.
         self.token_usage_output = 0 # Sum of output tokens received.
         # Error specific data
-        self.query_delay = 0 # Amount of time to wait before sending API request.
+        self.delay = 0 # Amount of time to wait before sending API request.
         self.timeouts_encountered = 0 # Number of timeouts encountered.
         self.max_timeouts = 10 # Maximum tolerable timeouts before giving up on request.
         self.response: Chunk # Response from GPT (or original text in case of unrecoverable failure).
@@ -98,6 +98,7 @@ class Query:
     # text should be returned rather than carelessly wasting API usage
     # by resending the query.
     async def run(self):
+        time.sleep(self.delay)
         if (self.should_run is False):
             print(f"Query: {self.idx} failed unrecoverably.")
             self.response = self.input_chunk
@@ -105,6 +106,7 @@ class Query:
         report_status(self.idx, self.token_count)
         self.response = Chunk(blocks_from_response(await self.query_chatgpt())) # String -> Blocks[] -> Chunk
         while (len(self.response.blocks) != len(self.input_chunk.blocks)):
+            time.sleep(self.delay)
             print(f"Inconsistent output, resending: {self.idx}")
             self.response = Chunk(blocks_from_response(await self.query_chatgpt()))
         return True

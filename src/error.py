@@ -116,10 +116,10 @@ def handle_timeout(query):
 
 # Exponential backoff.
 def handle_ratelimit(query):
-    if (query.query_delay > 256):
+    if (query.delay > 256):
         print(f"Query: {query.idx} Unable to overcome rate limit.")
         query.should_run = False
-    if (query.query_delay == 0):
-        query.query_delay = 30
-    query.query_delay *= 2
+    if (query.delay == 0):
+        query.delay = 30
+    query.delay *= 2
     query.should_run = True
