@@ -72,7 +72,7 @@ class SubtitleCorrector:
         self.cost = 0.0 # Total cost of processing the subtitle.
         self.successful_queries = 0 # Number of successfully returned queries.
         self.failed_queries = 0 # Number of unrecoverably failed queries.
-        self.responses = "" # Final response data.
+        self.responses = [] # Final response data.
 
     # Loads a whole sub file as an array of Segment objects.
     def load_subs(self):
@@ -98,11 +98,10 @@ class SubtitleCorrector:
         for query_seg in query_segments:
             print("Entering new segment.")
             time.sleep(sleep_time)
-            result = await query_seg.run()
-            self.responses += result
+            self.responses += await query_seg.run() # Appends array of Chunk objects to self.responses.
             sleep_time = SEG_DELAY
         utils.exit_message(query_segments, self.config.model)
-        return (utils.replace_sub_content(''.join(self.responses).splitlines(), self.subs))
+        return (utils.subs_from_chunks(self.responses, self.subs))
 
 def correct_subtitles(subtitle_file, prompt, outputfile="output.srt"):
     subcorrector = SubtitleCorrector(prompt, subtitle_file)

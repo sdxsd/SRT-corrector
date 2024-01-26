@@ -63,12 +63,9 @@ def calculate_cost(query_segments, model):
             output_usage += query.token_usage_output
     return (round((API_prices[model]["input_price"] * input_usage) + (API_prices[model]["output_price"] * output_usage), 2))
 
-# Globs all responses into single string.
+# Globs all responses into array of Chunk objects.
 def assemble_queries(queries):
-    full_output = ""
-    for query in queries:
-        full_output += query.response.glob()
-    return (full_output)
+    return (map(lambda q: q.response, queries))
 
 def failed_queries_from_list(results):
     failed = []
@@ -95,23 +92,10 @@ def parse_subtitle_file(subtitle_file):
     print(f"Parsed: {subtitle_file}")
     return (slist)
 
-# Replaces the "content" variable of the original subtitle block list
-# using the sum of the responses from GPT.
-def replace_sub_content(rawlines, slist):
-    i = 0
-    for sub in slist:
-        sub.content = ""
-        digit_encountered = False
-        while (i < len(rawlines)):
-            if (rawlines[i].rstrip().isdigit() is True):
-                if (digit_encountered is True):
-                    digit_encountered = False
-                    break
-                else:
-                    digit_encountered = True
-            else:
-                sub.content += ((" " if sub.content else "") + (rawlines[i] if rawlines[i].rstrip() != "" else ""))
-            i += 1
+def subs_from_chunks(chunks, slist):
+    for chunk in chunks:
+        for block in chunk.blocks:
+            slist[block.idx - 1].content = block.text
     return (srt.compose(slist))
 
 def report_status(idx, token_count):
