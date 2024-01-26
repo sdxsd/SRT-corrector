@@ -25,32 +25,9 @@
 
 # A program is free software if users have all of these freedoms.
 
+from const import API_prices
 import tiktoken
 import srt
-
-# Models and their different prices per token.
-API_prices = {
-    "gpt-4-1106-preview": {
-        "input_price": 0.01 / 1000,
-        "output_price": 0.03 / 1000
-    },
-    "gpt-4": {
-        "input_price": 0.03 / 1000,
-        "output_price": 0.06 / 1000
-    },
-    "gpt-4-32k": {
-        "input_price": 0.06 / 1000,
-        "output_price": 0.12 / 1000
-    },
-    "gpt-3.5-turbo-1106": {
-        "input_price": 0.0010 / 1000,
-        "output_price": 0.0020 / 1000
-    },
-    "gpt-3.5-turbo": {
-        "input_price": 0.0010 / 1000,
-        "output_price": 0.0020 / 1000
-    }
-}
 
 def analyse_results(query_segments):
     failed = 0
@@ -88,16 +65,26 @@ def calculate_cost(query_segments, model):
 
 # Globs all responses into single string.
 def assemble_queries(queries):
-    responses = ""
+    full_output = ""
     for query in queries:
-        responses += query.response
-    return (responses)
+        full_output += query.response
+    return (full_output)
+
+def failed_queries_from_list(results):
+    failed = []
+    for result in results:
+        if (result is not True):
+            failed.append(result)
+    return (failed)
 
 # Parses a given .SRT file and returns it's contents as an array.
 def parse_subtitle_file(subtitle_file):
     slist = []
+    encoding: str # TODO: Actually use this.
     try:
         with open(subtitle_file, encoding="utf-8") as f:
+            print("File is utf-8")
+            encoding = "utf-8"
             slist = list(srt.parse(f))
     except UnicodeError:
         with open(subtitle_file) as f:

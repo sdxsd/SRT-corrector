@@ -25,12 +25,14 @@
 
 # A program is free software if users have all of these freedoms.
 
-from parsing import Segment, Chunk, Block, Tiers
+from parsing import Segment, Chunk, Block
 from query import QuerySegment
 from openai import AsyncOpenAI
 from config import Config
+from const import Tiers
 import asyncio
 import utils
+import time
 
 SEG_DELAY = 70
 
@@ -65,19 +67,19 @@ class SubtitleCorrector:
 
     # Returns modified subtitle data.
     async def run(self):
+        sleep_time = 0
         query_segments = list(map(lambda x: QuerySegment(x, self.client, self.config), self.segments))
         for query_seg in query_segments:
             print("Entering new segment.")
-            if (query_seg != query_segments[0]):
-                print(f"Sleeping for {SEG_DELAY} seconds before processing next segment...")
-                await asyncio.sleep(SEG_DELAY)
+            time.sleep(sleep_time)
             result = await query_seg.run()
             self.responses += result
+            sleep_time = SEG_DELAY
         utils.exit_message(query_segments, self.config.model)
         return (utils.replace_sub_content(''.join(self.responses).splitlines(), self.subs))
 
 def correct_subtitles(subtitle_file, prompt, outputfile="output.srt"):
     subcorrector = SubtitleCorrector(prompt, subtitle_file)
     full_output = asyncio.run(subcorrector.run())
-    with open(outputfile, "w") as ofile:
+    with open(outputfile, "w", encoding="utf-8") as ofile:
         ofile.write(full_output)

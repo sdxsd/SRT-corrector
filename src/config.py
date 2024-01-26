@@ -40,8 +40,8 @@ default_config = {
 }
 
 # Rudimentary config class.
-class Config(prompt=""):
-    def __init__(self): 
+class Config():
+    def __init__(self, prompt=""): 
         config_path, config_dir = self.determine_config_path() 
         if (not os.path.exists(config_path)):
             self.generate_default_config(config_path, config_dir)

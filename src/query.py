@@ -23,8 +23,9 @@
 
 # A program is free software if users have all of these freedoms.
 
-from utils import count_subs, assemble_queries, calculate_cost, report_status
+from utils import assemble_queries, report_status, failed_queries_from_list
 from error import resend_failed_queries
+from parsing import Chunk, blocks_from_response
 import asyncio
 import openai
 import time
@@ -51,8 +52,10 @@ class QuerySegment:
         self.tokens = segment.tokens
 
     async def run(self):
-        failed_queries = await asyncio.gather(*self.query_tasks, return_exceptions=True)
-        await resend_failed_queries(failed_queries)
+        result = await asyncio.gather(*self.query_tasks, return_exceptions=True)
+        failed_queries = failed_queries_from_list(result)
+        if (len(failed_queries) > 0):
+            await resend_failed_queries(failed_queries)
         responses = assemble_queries(self.queries)
         return (responses)
 
@@ -66,12 +69,12 @@ class QuerySegment:
 class Query:
     def __init__(self, idx, client, config, chunk):
         self.prompt = config.prompt # Prompt object containing instructions for GPT.
-        self.query_text = chunk.glob() # Contains the chunk of subtitle data to be modified.
+        self.input_chunk = chunk # Contains the chunk of subtitle data to be modified.
         self.model = config.model # Model to be used for subtitle modification.
         self.token_count = (chunk.tokens + config.prompt.tokens) # Total token count of Query to be sent.
         self.messages = [ # Dictionary in format required by the OpenAI client. (sent as JSON eventually)
             {"role": "system", "content": config.prompt.instructions},
-            {"role": "user", "content": self.query_text}
+            {"role": "user", "content": self.input_chunk.glob()}
         ]
         # Data required for sending query:
         self.client = client # Client object used for communication with the API.
@@ -83,7 +86,7 @@ class Query:
         self.query_delay = 0 # Amount of time to wait before sending API request.
         self.timeouts_encountered = 0 # Number of timeouts encountered.
         self.max_timeouts = 10 # Maximum tolerable timeouts before giving up on request.
-        self.response = "" # Response from GPT (or original text in case of unrecoverable failure).
+        self.response: Chunk # Response from GPT (or original text in case of unrecoverable failure).
         self.should_run = True # If the Query should run or simply return the original text.
 
     # This function is a wrapper over query_chatgpt()
@@ -97,14 +100,14 @@ class Query:
     async def run(self):
         if (self.should_run is False):
             print(f"Query: {self.idx} failed unrecoverably.")
-            self.response = self.query_text
-            return
+            self.response = self.input_chunk
+            return True
         report_status(self.idx, self.token_count)
-        answer = await self.query_chatgpt()
-        while (count_subs(answer) != count_subs(self.query_text)):
+        self.response = Chunk(blocks_from_response(await self.query_chatgpt())) # String -> Blocks[] -> Chunk
+        while (len(self.response.blocks) != len(self.input_chunk.blocks)):
             print(f"Inconsistent output, resending: {self.idx}")
-            answer = await self.query_chatgpt()
-        self.response = answer
+            self.response = Chunk(blocks_from_response(await self.query_chatgpt()))
+        return True
 
     # This functions sends the query TO and receives the response
     # FROM the OpenAI API.
