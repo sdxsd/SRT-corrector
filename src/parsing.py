@@ -9,7 +9,7 @@ import re
 # Blah blah blah I am the person
 # who dies in this movie.
 class Block:
-    def __init__(self, idx: int, text: str) -> None:
+    def __init__(self, idx, text):
         self.idx = idx
         self.text = text
         self.tokens = num_tokens(str(self.idx) + linesep + self.text + linesep)
@@ -22,7 +22,7 @@ class Block:
 # Chunk is a collection of Block objects with a token count
 # roughly equivalent to tokens_per_query as specified in the config.
 class Chunk:
-    def __init__(self, blocks: list[Block]) -> None:
+    def __init__(self, blocks):
         self.blocks = blocks
         self.tokens = (sum(map(lambda block: block.tokens, blocks)))
 
@@ -49,19 +49,19 @@ class Chunk:
 # dependent on the "tier" of the organisation as specified in the Config
 # object.
 class Segment:
-    def __init__(self, chunks: list[Chunk]) -> None:
+    def __init__(self, chunks):
         self.chunks = chunks
         self.tokens = (sum(map(lambda chunk: chunk.tokens, chunks)))
 
-    def append_to_segment(self, chunk) -> None:
+    def append_to_segment(self, chunk):
         self.chunks.append(chunk)
         self.tokens += chunk.tokens
 
-    def display(self) -> None:
+    def display(self):
         print(f"Number of Chunks: {len(self.chunks)}")
         print(f"Total tokens in segment: {self.tokens}")
 
-    def display_chunks(self) -> None:
+    def display_chunks(self):
         for chunk in self.chunks:
             chunk.display_blocks()
 
@@ -69,7 +69,7 @@ class Segment:
 # Yn glob ar yn forsamlen tekst ymakt ut subtitle blokken yglobt dur
 # et glob() metod. Worhem dyse funktion? Wo ybruken dyse funktion far
 # et hereancoderen fan et SRT yskryve.
-def blocks_from_response(response: str) -> list[Block]:
+def blocks_from_response(response):
     blank_line_regex = r"(?:\r?\n){2,}" # Incomprehensible.
     raw_blocks = re.split(blank_line_regex, response.strip())
     blocks = []
@@ -81,6 +81,6 @@ def blocks_from_response(response: str) -> list[Block]:
     return (blocks)
 
 # Displays a whole file stored as segments.
-def display_sub_file(segments: list[Segment]) -> None:
+def display_sub_file(segments):
     for segment in segments:
         segment.display_chunks()
