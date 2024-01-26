@@ -27,6 +27,7 @@
 
 from const import API_prices
 import tiktoken
+from colored import Fore, Style
 import srt
 
 def analyse_results(query_segments):
@@ -38,7 +39,7 @@ def analyse_results(query_segments):
                 failed += 1
             else:
                 successful += 1
-    print(f"({successful}) Successful ({failed}) Failed")
+    print(f"{Fore.green}({successful}){Style.reset} Successful {Fore.red}({failed}){Style.reset} Failed")
 
 def exit_message(query_segments, model):
     print("All queries resolved.")
@@ -87,9 +88,9 @@ def parse_subtitle_file(subtitle_file):
         with open(subtitle_file) as f:
             slist = list(srt.parse(f))
     if (not slist):
-        print(f"Failed to parse {subtitle_file}, exiting...")
+        print(f"{Fore.red}Failed to parse {subtitle_file}, exiting...{Style.reset}")
         exit()
-    print(f"Parsed: {subtitle_file}")
+    print(f"{Fore.green}Parsed: {subtitle_file}{Style.reset}")
     return (slist)
 
 def subs_from_chunks(chunks, slist):
@@ -102,4 +103,4 @@ def sum_tokens(x_list):
     return (sum(map(lambda x: x.tokens, x_list)))
 
 def report_status(idx, token_count):
-    print(f"Sending query: {idx} Token count: {token_count}")
+    print(f"{Fore.green}Sending query: {idx} | Token count: {token_count}{Style.reset}")

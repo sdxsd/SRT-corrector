@@ -24,8 +24,9 @@
 # A program is free software if users have all of these freedoms.
 
 from utils import assemble_queries, report_status, failed_queries_from_list
-from error import resend_failed_queries
 from parsing import Chunk, blocks_from_response
+from error import resend_failed_queries
+from colored import Fore, Style
 import asyncio
 import openai
 import time
@@ -100,14 +101,14 @@ class Query:
     async def run(self):
         time.sleep(self.delay)
         if (self.should_run is False):
-            print(f"Query: {self.idx} failed unrecoverably.")
+            print(f"{Fore.red}Query: {self.idx} failed unrecoverably.{Style.reset}")
             self.response = self.input_chunk
             return True
         report_status(self.idx, self.token_count)
         self.response = Chunk(blocks_from_response(await self.query_chatgpt())) # String -> Blocks[] -> Chunk
         while (len(self.response.blocks) != len(self.input_chunk.blocks)):
             time.sleep(self.delay)
-            print(f"Inconsistent output, resending: {self.idx}")
+            print(f"{Fore.red}Inconsistent output, resending: {self.idx}{Style.reset}")
             self.response = Chunk(blocks_from_response(await self.query_chatgpt()))
         return True
 

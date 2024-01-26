@@ -47,6 +47,7 @@
 # Because of this, the loop within resend_failed_queries() will continue until all the queries
 # have been resolved (either failed unrecoverably) or returned successful output from the API.
 
+from colored import Fore, Style
 import openai
 import asyncio
 
@@ -84,7 +85,7 @@ async def resend_failed_queries(failed_queries):
 # Modify state of failed queries.
 async def handle_failed_queries(query_exceptions):
     for exception in query_exceptions:
-        print(f"Query: {exception.query.idx} {Errors[exception.error_type]}")
+        print(f"{Fore.red}Query: {exception.query.idx} {Errors[exception.error_type]}{Style.reset}")
         if (exception.error_type == openai.APITimeoutError.__name__):
             handle_timeout(exception.query)
         elif (exception.error_type == openai.RateLimitError.__name__):
@@ -109,7 +110,7 @@ def handle_timeout(query):
     query.timeouts_encountered += 1
     query.delay += 5
     if (query.timeouts_encountered > query.max_timeouts):
-        print(f"Query: {query.idx} Too many timeouts.")
+        print(f"{Fore.red}Query: {query.idx} Too many timeouts.{Style.reset}")
         query.should_run = False
     else:
         query.should_run = True
@@ -117,7 +118,7 @@ def handle_timeout(query):
 # Exponential backoff.
 def handle_ratelimit(query):
     if (query.delay > 256):
-        print(f"Query: {query.idx} Unable to overcome rate limit.")
+        print(f"{Fore.red}Query: {query.idx} Unable to overcome rate limit.{Style.reset}")
         query.should_run = False
     if (query.delay == 0):
         query.delay = 30
