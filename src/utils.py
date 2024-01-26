@@ -98,5 +98,8 @@ def subs_from_chunks(chunks, slist):
             slist[block.idx - 1].content = block.text
     return (srt.compose(slist))
 
+def sum_tokens(x_list):
+    return (sum(map(lambda x: x.tokens, x_list)))
+
 def report_status(idx, token_count):
     print(f"Sending query: {idx} Token count: {token_count}")

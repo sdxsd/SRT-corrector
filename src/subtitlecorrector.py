@@ -81,10 +81,10 @@ class SubtitleCorrector:
         blocks = []
         for sub in self.subs:
             blocks.append(Block(sub.index, sub.content))
-            if (sum(map(lambda b: b.tokens, blocks)) >= self.config.tokens_per_query):
+            if (utils.sum_tokens(blocks) >= self.config.tokens_per_query):
                 chunks.append(Chunk(blocks))
                 blocks.clear()
-            if (sum(map(lambda c: c.tokens, chunks)) >= Tiers[self.config.tier][self.config.model]['TPM']):
+            if (utils.sum_tokens(chunks) >= Tiers[self.config.tier][self.config.model]['TPM']):
                 segments.append(Segment(chunks))
                 chunks.clear()
         chunks.append(Chunk(blocks))
