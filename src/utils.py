@@ -25,9 +25,9 @@
 
 # A program is free software if users have all of these freedoms.
 
+from colored import Fore, Style
 from const import API_prices
 import tiktoken
-from colored import Fore, Style
 import srt
 
 def analyse_results(query_segments):
@@ -77,16 +77,8 @@ def failed_queries_from_list(results):
 
 # Parses a given .SRT file and returns it's contents as an array.
 def parse_subtitle_file(subtitle_file):
-    slist = []
-    encoding: str # TODO: Actually use this.
-    try:
-        with open(subtitle_file, encoding="utf-8") as f:
-            print("File is utf-8")
-            encoding = "utf-8"
-            slist = list(srt.parse(f))
-    except UnicodeError:
-        with open(subtitle_file) as f:
-            slist = list(srt.parse(f))
+    with open(subtitle_file) as f:
+        slist = list(srt.parse(f))
     if (not slist):
         print(f"{Fore.red}Failed to parse {subtitle_file}, exiting...{Style.reset}")
         exit()
