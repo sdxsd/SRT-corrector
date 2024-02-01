@@ -30,6 +30,7 @@ from const import API_prices
 import tiktoken
 import srt
 
+# Counts and displays the amount of successful and failed queries.
 def analyse_results(query_segments):
     failed = 0
     successful = 0
@@ -41,6 +42,7 @@ def analyse_results(query_segments):
                 successful += 1
     print(f"{Fore.green}({successful}){Style.reset} Successful {Fore.red}({failed}){Style.reset} Failed")
 
+# Prints the exit message.
 def exit_message(query_segments, model):
     print("All queries resolved.")
     analyse_results(query_segments)
@@ -85,14 +87,17 @@ def parse_subtitle_file(subtitle_file):
     print(f"{Fore.green}Parsed: {subtitle_file}{Style.reset}")
     return (slist)
 
+# Composes a valid subtitle file from chunks and the original file.
 def subs_from_chunks(chunks, slist):
     for chunk in chunks:
         for block in chunk.blocks:
             slist[block.idx - 1].content = block.text
     return (srt.compose(slist))
 
+# Sums amount of tokens in a list of any object with a .token property.
 def sum_tokens(x_list):
     return (sum(map(lambda x: x.tokens, x_list)))
 
+# Most common terminal output.
 def report_status(idx, token_count):
     print(f"{Fore.green}Sending query: {idx} | Token count: {token_count}{Style.reset}")
