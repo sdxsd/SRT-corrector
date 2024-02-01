@@ -25,7 +25,7 @@
 
 # A program is free software if users have all of these freedoms.
 
-from charset_normalizer import from_bytes, from_fp, from_path
+from charset_normalizer import from_path
 from colored import Fore, Style
 from const import API_prices
 import tiktoken
