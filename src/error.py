@@ -48,8 +48,8 @@
 # have been resolved (either failed unrecoverably) or returned successful output from the API.
 
 from colored import Fore, Style
-import openai
 import asyncio
+import openai
 
 # Mapping of error names to messages.
 Errors = {

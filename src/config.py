@@ -23,10 +23,10 @@
 
 # A program is free software if users have all of these freedoms.
 
-import os
+from prompts import Prompt
 import platform
 import json
-from prompts import Prompt
+import os
 
 # Default recommended config. 
 # Model should be the most up to date and cheapest GPT4 model.

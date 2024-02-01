@@ -23,10 +23,10 @@
 
 # A program is free software if users have all of these freedoms.
 
+from utils import num_tokens
+from os import walk
 import json
 import os
-from os import walk
-from utils import num_tokens
 
 # Every instance of this object within Prompt will be appended to the query sent
 # to OpenAI as examples for how ChatGPT should responded.
