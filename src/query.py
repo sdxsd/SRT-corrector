@@ -32,6 +32,7 @@ import openai
 import time
 import os
 
+# Prepares Query objects to be run.
 def prepare_queries(chunks, client, config):
     queries = []
     query_tasks = []
@@ -47,17 +48,18 @@ class QueryException(Exception):
 
 class QuerySegment:
     def __init__(self, segment, client, config):
-        self.config = config
-        self.segment = segment
-        self.queries, self.query_tasks = prepare_queries(self.segment.chunks, client, config)
-        self.tokens = segment.tokens
+        self.config = config # Config information.
+        self.segment = segment # Segment of the subtitle file to be processed.
+        self.queries, self.query_tasks = prepare_queries(self.segment.chunks, client, config) # Task objects to be run.
+        self.tokens = segment.tokens # Number of tokens in segment.
 
+    # Runs all Query objects in a QuerySegment.
     async def run(self):
         result = await asyncio.gather(*self.query_tasks, return_exceptions=True)
-        failed_queries = failed_queries_from_list(result)
+        failed_queries = failed_queries_from_list(result) # Weed out failed queries from the results.
         if (len(failed_queries) > 0):
             await resend_failed_queries(failed_queries)
-        responses = assemble_queries(self.queries)
+        responses = assemble_queries(self.queries) # Maps all responses into a new list of Chunk objects.
         return (responses)
 
 # This class can be thought of as a package which contains the data to allow a request to
@@ -100,13 +102,13 @@ class Query:
     # by resending the query.
     async def run(self):
         time.sleep(self.delay)
-        if (self.should_run is False):
+        if (self.should_run is False): # Check if the Query has been marked unrecoverable.
             print(f"{Fore.red}Query: {self.idx} failed unrecoverably.{Style.reset}")
             self.response = self.input_chunk
             return True
         report_status(self.idx, self.token_count)
         self.response = Chunk(blocks_from_response(await self.query_chatgpt())) # String -> Blocks[] -> Chunk
-        while (len(self.response.blocks) != len(self.input_chunk.blocks)):
+        while (len(self.response.blocks) != len(self.input_chunk.blocks)): # Run until response contains correct amount of subtitle blocks.
             time.sleep(self.delay)
             print(f"{Fore.red}Inconsistent output, resending: {self.idx}{Style.reset}")
             self.response = Chunk(blocks_from_response(await self.query_chatgpt()))
@@ -131,7 +133,7 @@ class Query:
             raise QueryException(self, type(e).__name__)
         self.token_usage_input += response.usage.prompt_tokens
         self.token_usage_output += response.usage.completion_tokens
-        if (response.choices[0].finish_reason != "stop"):
+        if (response.choices[0].finish_reason != "stop"): # Stop reason was invalid, raise exception.
             raise QueryException(self, response.choices[0].finish_reason)
         print(f"Query: {self.idx} Response received in: {round((time.time() - start), 2)} seconds")
         answer = response.choices[0].message.content

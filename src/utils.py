@@ -70,6 +70,7 @@ def calculate_cost(query_segments, model):
 def assemble_queries(queries):
     return (map(lambda q: q.response, queries))
 
+# Returns list of QueryException objects from a given list.
 def failed_queries_from_list(results):
     failed = []
     for result in results:
