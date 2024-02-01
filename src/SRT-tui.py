@@ -27,8 +27,6 @@
 
 import subtitlecorrector as stc
 import argparse
-import os
-import platform
 import prompts as prompts
 
 # Creates the argument parser.

@@ -25,6 +25,7 @@
 
 # A program is free software if users have all of these freedoms.
 
+from charset_normalizer import from_bytes, from_fp, from_path
 from colored import Fore, Style
 from const import API_prices
 import tiktoken
@@ -77,8 +78,8 @@ def failed_queries_from_list(results):
 
 # Parses a given .SRT file and returns it's contents as an array.
 def parse_subtitle_file(subtitle_file):
-    with open(subtitle_file) as f:
-        slist = list(srt.parse(f))
+    fstring = str(from_path(subtitle_file).best())
+    slist = list(srt.parse(fstring))
     if (not slist):
         print(f"{Fore.red}Failed to parse {subtitle_file}, exiting...{Style.reset}")
         exit()
