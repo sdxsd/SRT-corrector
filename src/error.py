@@ -63,6 +63,7 @@ Errors = {
     "ERR_generic": "Query failed due to error",
 }
 
+# Is the list empty?
 def list_empty(list_to_check):
     if (sum(map(lambda x: x is True, list_to_check)) == 0):
         return True

@@ -89,7 +89,7 @@ class Chunk:
         for block in self.blocks:
             block.display()
 
-    def glob(self):
+    def glob(self): # Dumps block data into single string.
         glob = ""
         for block in self.blocks:
             glob += str(block.idx) + linesep + block.text + linesep + linesep
