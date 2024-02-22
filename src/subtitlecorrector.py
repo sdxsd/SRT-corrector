@@ -75,6 +75,16 @@ class SubtitleCorrector:
         self.responses = [] # Final response data.
 
     # Loads a whole sub file as an array of Segment objects.
+    # The function first converts each sub into a Block object and places it into an array.
+    # Each Block has a number representing the amount of tokens it contains. When the sum total of
+    # the token count of each block in the array exceeds the amount of tokens to send per
+    # API request, the tokens are placed into a new Chunk object.
+    # Each Chunk object also has a variable containing the number of tokens the object contains,
+    # hence when the sum of the tokens in the Chunk array exceeds the amount to send in a "Segment"
+    # these Chunks are placed in a new Segment object. If this value is never exceeded, the Chunk array
+    # is nonetheless placed into a new Segment object at the end of the function.
+    # It is rare for a file to require the creation of multiple Segments.
+    # One shall generally suffice.
     def load_subs(self):
         segments = []
         chunks = []
@@ -84,25 +94,33 @@ class SubtitleCorrector:
             if (utils.sum_tokens(blocks) >= self.config.tokens_per_query):
                 chunks.append(Chunk(blocks.copy())) # Use .copy because otherwise it will be passed as pointer.
                 blocks.clear()
+            # This condition should only return true in such a case that sending a whole file asynchronously would exceed the rate limit.
+            # Rate limit is determined by the organisation's tier and the model being used (See config.py).
+            # You can find the rate limit info in const.py.
             if (utils.sum_tokens(chunks) >= Tiers[self.config.tier][self.config.model]['TPM']):
                 segments.append(Segment(chunks.copy()))
                 chunks.clear()
-        chunks.append(Chunk(blocks))
-        segments.append(Segment(chunks))
+        chunks.append(Chunk(blocks)) # Places remaining Blocks into new Chunk.
+        segments.append(Segment(chunks)) # Places remaining Chunks into new Segment.
         return (segments)
 
     # Returns modified subtitle data.
     async def run(self):
         sleep_time = 0
+        # Constructs an array of QuerySegment objects from a given array of Segments.
         query_segments = list(map(lambda x: QuerySegment(x, self.client, self.config), self.segments))
+        # Runs each QuerySegment object iteratively in order to process the entire file.
         for query_seg in query_segments:
             print("Entering new segment.")
             time.sleep(sleep_time)
             self.responses += await query_seg.run() # Appends array of Chunk objects to self.responses.
             sleep_time = SEG_DELAY
         utils.exit_message(query_segments, self.config.model)
+        # Return a valid subtitle file from an array of Chunk objects.
         return (utils.subs_from_chunks(self.responses, self.subs))
 
+# Constructs and runs the SubtitleCorrector class and writes the output to a file.
+# This function is called in SRT-tui.py and SRT-gui.py
 def correct_subtitles(subtitle_file, prompt, outputfile="output.srt"):
     subcorrector = SubtitleCorrector(prompt, subtitle_file)
     full_output = asyncio.run(subcorrector.run())

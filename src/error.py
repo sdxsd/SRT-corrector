@@ -47,6 +47,7 @@
 # Because of this, the loop within resend_failed_queries() will continue until all the queries
 # have been resolved (either failed unrecoverably) or returned successful output from the API.
 
+from utils import failed_queries_from_list
 from colored import Fore, Style
 import asyncio
 import openai
@@ -63,25 +64,18 @@ Errors = {
     "ERR_generic": "Query failed due to error",
 }
 
-# Is the list empty?
-def list_empty(list_to_check):
-    if (sum(map(lambda x: x is True, list_to_check)) == 0):
-        return True
-    else:
-        return (False)
-
 # Modify and run() again till all Queries are either succesful or have failed unrecoverably.
 async def resend_failed_queries(failed_queries):
     tasks = []
-    while (True):
+    while (len(failed_queries) > 0): # Continuously re-run failed_queries until the list is empty.
         tasks.clear()
+        # Modifies Query object differently depending on the reason they failed. (Adding delay in the case of ratelimit).
         await handle_failed_queries(failed_queries)
         for failed_query in failed_queries:
-            tasks.append(asyncio.create_task(failed_query.query.run()))
+            tasks.append(asyncio.create_task(failed_query.query.run())) # Generate new async tasks to be run modified queries.
         failed_queries.clear()
-        failed_queries = await asyncio.gather(*tasks, return_exceptions=True)
-        if (list_empty(failed_queries) is True):
-            return
+        # Run the async tasks and get the Query objects that failed from the resulting list.
+        failed_queries = failed_queries_from_list(await asyncio.gather(*tasks, return_exceptions=True))
 
 # Modify state of failed queries.
 async def handle_failed_queries(query_exceptions):
