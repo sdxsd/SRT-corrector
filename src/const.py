@@ -25,7 +25,7 @@
 
 # Models and their different prices per token.
 API_prices = {
-    "gpt-4-1106-preview": {
+    "gpt-4-turbo-preview": {
         "input_price": 0.01 / 1000,
         "output_price": 0.03 / 1000
     },
@@ -64,7 +64,7 @@ Tiers = {
             "RPM": 500,
             "TPM": 10000
         },
-        "gpt-4-1106-preview": {
+        "gpt-4-turbo-preview": {
             "RPM": 500,
             "TPM": 150000
         }
@@ -78,7 +78,7 @@ Tiers = {
             "RPM": 5000,
             "TPM": 40000
         },
-        "gpt-4-1106-preview": {
+        "gpt-4-turbo-preview": {
             "RPM": 5000,
             "TPM": 300000
         }
@@ -92,7 +92,7 @@ Tiers = {
             "RPM": 5000,
             "TPM": 80000
         },
-        "gpt-4-1106-preview": {
+        "gpt-4-turbo-preview": {
             "RPM": 5000,
             "TPM": 300000
         }
@@ -106,7 +106,7 @@ Tiers = {
             "RPM": 10000,
             "TPM": 300000
         },
-        "gpt-4-1106-preview": {
+        "gpt-4-turbo-preview": {
             "RPM": 10000,
             "TPM": 450000
         }
@@ -120,7 +120,7 @@ Tiers = {
             "RPM": 10000,
             "TPM": 300000
         },
-        "gpt-4-1106-preview": {
+        "gpt-4-turbo-preview": {
             "RPM": 10000,
             "TPM": 600000
         }
