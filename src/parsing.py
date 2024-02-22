@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # SUBTITLE-CORRECTOR IS LICENSED UNDER THE GNU GPLv3
 # Copyright (C) 2023 Will Maguire
 
