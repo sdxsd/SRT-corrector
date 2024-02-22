@@ -46,7 +46,8 @@ class Config():
         if (not os.path.exists(config_path)):
             self.generate_default_config(config_path, config_dir)
         with open(config_path) as f:     
-            obj = json.loads(f.read())
+            obj = json.loads(f.read()) # Open & read config file.
+        # "Tier" of the organisation, see https://platform.openai.com/docs/guides/rate-limits/usage-tiers
         self.tier = obj['tier']
         self.model = obj['model'] # Model to use.
         self.prompt_directory = obj['prompt_directory'] # Directory where prompts are stored.
