@@ -32,7 +32,8 @@ import openai
 import time
 import os
 
-# Prepares Query objects to be run.
+# Converts an array of Chunk objects into an array Query objects and uses those
+# Query objects to construct an array of asyncio tasks.
 def prepare_queries(chunks, client, config):
     queries = []
     query_tasks = []
@@ -41,19 +42,27 @@ def prepare_queries(chunks, client, config):
         query_tasks.append(asyncio.create_task(queries[idx].run()))
     return (queries, query_tasks)
 
+# Exception class that acts as an abstraction over the various types of problems
+# that could arise with the API.
 class QueryException(Exception):
     def __init__(self, query, error_type):
         self.query: Query = query # Query object which has failed.
         self.error_type = error_type # Type of error which caused Query object to fail.
 
+# Query objects are roughly equivalent to Chunk objects, the difference being that
+# Query objects have the responsibility of communicating with the API. In this sense
+# a QuerySegment is just a convenient grouping of Query objects so that they can all
+# be run() asynchronously. During the construction of the QuerySegment both the Query objects and the
+# asyncio task objects are initialised.
 class QuerySegment:
+    # Initalises the QuerySegment itself and also the Query and asyncio tasks it contains.
     def __init__(self, segment, client, config):
         self.config = config # Config information.
         self.segment = segment # Segment of the subtitle file to be processed.
         self.queries, self.query_tasks = prepare_queries(self.segment.chunks, client, config) # Task objects to be run.
         self.tokens = segment.tokens # Number of tokens in segment.
 
-    # Runs all Query objects in a QuerySegment.
+    # Calls run() from all Query objects in a QuerySegment asynchronously.
     async def run(self):
         result = await asyncio.gather(*self.query_tasks, return_exceptions=True)
         failed_queries = failed_queries_from_list(result) # Weed out failed queries from the results.
@@ -114,8 +123,8 @@ class Query:
             self.response = Chunk(blocks_from_response(await self.query_chatgpt()))
         return True
 
-    # This functions sends the query TO and receives the response
-    # FROM the OpenAI API.
+    # This functions sends the query from and receives the response
+    # from the OpenAI API.
     # A QueryException object is raised if either the finish_reason does not
     # equal stop, or if the API itself has returned an exception.
     # If the API does not return an exception, the token input and token output
