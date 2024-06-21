@@ -25,7 +25,7 @@
 
 # Models and their different prices per token.
 API_prices = {
-    "gpt-4-turbo-preview": {
+    "gpt-4-turbo": {
         "input_price": 0.01 / 1000,
         "output_price": 0.03 / 1000
     },
@@ -44,6 +44,10 @@ API_prices = {
     "gpt-3.5-turbo": {
         "input_price": 0.0010 / 1000,
         "output_price": 0.0020 / 1000
+    },
+    "gpt-4o": {
+        "input_price": 0.005 / 1000,
+        "output_price": 0.015 / 1000
     }
 }
 
@@ -56,6 +60,10 @@ Tiers = {
         }
     },
     1: {
+        "gpt-4o": {
+            "RPM": 500,
+            "TPM": 30000
+        },
         "gpt-3.5-turbo": {
             "RPM": 3500,
             "TPM": 60000
@@ -64,12 +72,16 @@ Tiers = {
             "RPM": 500,
             "TPM": 10000
         },
-        "gpt-4-turbo-preview": {
+        "gpt-4-turbo": {
             "RPM": 500,
-            "TPM": 150000
+            "TPM": 30000
         }
     },
     2: {
+        "gpt-4o": {
+            "RPM": 5000,
+            "TPM": 450000
+        },
         "gpt-3.5-turbo": {
             "RPM": 3500,
             "TPM": 80000
@@ -78,12 +90,16 @@ Tiers = {
             "RPM": 5000,
             "TPM": 40000
         },
-        "gpt-4-turbo-preview": {
+        "gpt-4-turbo": {
             "RPM": 5000,
-            "TPM": 300000
+            "TPM": 450000
         }
     },
     3: {
+        "gpt-4o": {
+            "RPM": 5000,
+            "TPM": 600000
+        },
         "gpt-3.5-turbo": {
             "RPM": 3500,
             "TPM": 160000
@@ -92,12 +108,16 @@ Tiers = {
             "RPM": 5000,
             "TPM": 80000
         },
-        "gpt-4-turbo-preview": {
+        "gpt-4-turbo": {
             "RPM": 5000,
-            "TPM": 300000
+            "TPM": 600000
         }
     },
     4: {
+        "gpt-4o": {
+            "RPM": 10000,
+            "TPM": 800000
+        },
         "gpt-3.5-turbo": {
             "RPM": 10000,
             "TPM": 1000000
@@ -106,12 +126,16 @@ Tiers = {
             "RPM": 10000,
             "TPM": 300000
         },
-        "gpt-4-turbo-preview": {
+        "gpt-4-turbo": {
             "RPM": 10000,
-            "TPM": 450000
+            "TPM": 800000
         }
     },
     5: {
+        "gpt-4o": {
+            "RPM": 10000,
+            "TPM": 12000000
+        },
         "gpt-3.5-turbo": {
             "RPM": 10000,
             "TPM": 2000000
@@ -120,9 +144,9 @@ Tiers = {
             "RPM": 10000,
             "TPM": 300000
         },
-        "gpt-4-turbo-preview": {
+        "gpt-4-turbo": {
             "RPM": 10000,
-            "TPM": 600000
+            "TPM": 2000000
         }
     },
 }
